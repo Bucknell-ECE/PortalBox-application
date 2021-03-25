@@ -39,11 +39,12 @@ class R2NeoPixelController(AbstractController):
         else:
             self.port = '/dev/serial0'
 
+        logging.debug("Creating serial port connection to Arduino")
         self._controller = serial.Serial(port=self.port, timeout=2)
+        logging.debug("Finished creating serial port connection")
 
 
     def _transmit(self, command):
-        logging.debug("Sending: '%s' to display controller", command)
         self._controller.write(bytes(command, "ascii"))
 
 
@@ -66,9 +67,11 @@ class R2NeoPixelController(AbstractController):
                     return False
                 #else: read a whitespace character
             else:
+                logging.error("NeoPixel controller rcvd 0 length response")
                 raise Exception('Communications failed')
             sleep(0.05)
 
+        logging.error("NeoPixel controller receive timeout")
         raise Exception('Communications failed')
 
 
@@ -77,6 +80,7 @@ class R2NeoPixelController(AbstractController):
         Start a display sleeping animation
         '''
         AbstractController.sleep_display(self)
+        self.set_display_color(self.sleep_color)  # Bug in pulse cmd?
         command = "pulse {} {} {}\n".format(self.sleep_color[0], self.sleep_color[1], self.sleep_color[2])
         self._transmit(command)
         return self._receive()
