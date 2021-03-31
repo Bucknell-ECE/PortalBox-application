@@ -1,6 +1,10 @@
 #!python3
 
 """
+2021-03-29 Version   KJHass
+  - A training card is only accepted after a valid user card has been
+    accepted. The box is purple while using a training card.
+
 2021-03-18 Version   KJHass
   - Two files are periodically written in /tmp to feed a watchdog timer
     and to keep a record of the last event in case of application crash
@@ -35,6 +39,11 @@ GREEN = b'\x00\xFF\x00'
 YELLOW = b'\xFF\xFF\x00'
 BLUE = b'\x00\x00\xFF'
 ORANGE = b'\xDF\x20\x00'
+PURPLE = b'\x80\x00\x80'
+
+AUTH_COLOR = GREEN
+PROXY_COLOR = ORANGE
+TRAINER_COLOR = PURPLE
 
 class PortalBoxApplication:
     '''
@@ -173,18 +182,6 @@ class PortalBoxApplication:
                     self.box.set_display_color()
                     logging.debug("Telling OS to shut down")
                     os.system("sync; shutdown -h now")
-                elif Database.TRAINING_CARD == card_type:
-                    logging.info("Training card %s detected, authorized?", uid)
-                    if self.db.is_training_card_for_equipment_type(uid, self.equipment_type_id):
-                        logging.info("Trainer %s authorized for %s",
-                                      uid, self.equipment_type)
-                        self.training_mode = True
-                        self.run_session(uid)
-                        self.training_mode = False
-                    else:
-                        self.wait_for_unauthorized_card_removal(uid)
-                    logging.debug("Done with training card, start sleep display")
-                    self.box.sleep_display()
                 elif Database.USER_CARD == card_type:
                     logging.info("User card %s detected, authorized?", uid)
                     if self.db.is_user_authorized_for_equipment_type(uid, self.equipment_type_id):
@@ -197,7 +194,7 @@ class PortalBoxApplication:
                     logging.debug("Done with user card, start sleep display")
                     self.box.sleep_display()
                 else:
-                    logging.info("Unknown card %s detected", uid)
+                    logging.info("Unauthorized card %s detected", uid)
                     self.wait_for_unauthorized_card_removal(uid)
                     logging.debug("Done with unauthorized card, start sleep display")
                     self.box.sleep_display()
@@ -214,16 +211,18 @@ class PortalBoxApplication:
         logging.info("Logging activation of %s to DB", self.equipment_type)
         self.db.log_access_attempt(user_id, self.equipment_id, True)
         self.authorized_uid = user_id
+        self.proxy_uid = -1
+        self.training_mode = False
 
         logging.debug("Setting display to green")
-        self.box.set_display_color(GREEN)
+        self.box.set_display_color(AUTH_COLOR)
         self.box.set_buzzer(True)
         self.box.set_equipment_power_on(True)
         sleep(0.05)
 
         self.box.set_buzzer(False)
         logging.debug("Setting display to green")
-        self.box.set_display_color(GREEN)
+        self.box.set_display_color(AUTH_COLOR)
 
         if 0 < self.timeout_period:
             self.exceeded_time = False
@@ -286,7 +285,12 @@ class PortalBoxApplication:
         self.proxy_uid = -1
         # We have to have a grace_counter because consecutive card reads currently fail
         grace_count = 0
-        color_now = GREEN
+
+        if self.training_mode:
+            color_now = TRAINER_COLOR
+        else:
+            color_now = AUTH_COLOR
+
         #loop endlessly waiting for shutdown or card to be removed
         logging.debug("Waiting for card removal or timeout")
         while self.running and self.card_present:
@@ -302,10 +306,12 @@ class PortalBoxApplication:
                     self.exceeded_time = False
                     if self.card_present:
                             grace_count = 0
-                            if -1 < self.proxy_uid:
-                                color_now = ORANGE
+                            if self.proxy_uid > -1:
+                                color_now = PROXY_COLOR
+                            elif self.training_mode:
+                                color_now = TRAINER_COLOR
                             else:
-                                color_now = GREEN
+                                color_now = AUTH_COLOR
                     self.activation_timeout = threading.Timer(self.timeout_period, self.timeout)
                     self.activation_timeout.start()
                 else:
@@ -326,9 +332,11 @@ class PortalBoxApplication:
                     if self.card_present:
                         grace_count = 0
                         if -1 < self.proxy_uid:
-                            color_now = ORANGE
+                            color_now = PROXY_COLOR
+                        elif self.training_mode:
+                            color_now = TRAINER_COLOR
                         else:
-                            color_now = GREEN
+                            color_now = AUTH_COLOR
 
             self.box.set_display_color(color_now)
             sleep(0.1)
@@ -366,7 +374,7 @@ class PortalBoxApplication:
 
             # Scan for card
             uid = self.box.read_RFID_card()
-            if -1 < uid:
+            if uid > -1:
                 # we read a card
                 if uid == self.authorized_uid:
                     # card returned
@@ -374,14 +382,27 @@ class PortalBoxApplication:
                     logging.debug("Authorized card returned")
                     break
                 elif not self.training_mode: # trainers may not use proxy cards
-                    # check if proxy card
                     logging.debug("Checking if this is a proxy card")
                     if Database.PROXY_CARD == self.db.get_card_type(uid):
                         self.card_present = True
                         self.proxy_uid = uid
-                        logging.debug("Trainer using proxy card")
+                        logging.debug("Authorized user using proxy card")
                         break
-                    logging.debug("This is not a proxy card")
+                    
+                    logging.debug("Checking if this is a training card")
+                    if Database.TRAINING_CARD == self.db.get_card_type(uid):
+                        logging.info("Training card %s detected, authorized?", uid)
+                        if self.proxy_uid > -1:
+                            logging.info("Training card can't be used with proxy")
+                        elif self.db.is_training_card_for_equipment_type(uid, self.equipment_type_id):
+                            logging.info("Trainer %s authorized for %s",
+                                          uid, self.equipment_type)
+                            self.card_present = True
+                            self.training_mode = True
+                            self.authorized_uid = uid
+                            break
+                        logging.info("Trainer %s NOT authorized for %s",
+                                      uid, self.equipment_type)
 
             grace_count += 1
             self.box.set_buzzer(True)
