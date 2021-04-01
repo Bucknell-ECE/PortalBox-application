@@ -331,12 +331,13 @@ class PortalBoxApplication:
                     self.wait_for_user_card_return()
                     if self.card_present:
                         grace_count = 0
-                        if -1 < self.proxy_uid:
-                            color_now = PROXY_COLOR
-                        elif self.training_mode:
-                            color_now = TRAINER_COLOR
-                        else:
-                            color_now = AUTH_COLOR
+
+            if -1 < self.proxy_uid:
+                color_now = PROXY_COLOR
+            elif self.training_mode:
+                color_now = TRAINER_COLOR
+            else:
+                color_now = AUTH_COLOR
 
             self.box.set_display_color(color_now)
             sleep(0.1)
@@ -397,6 +398,7 @@ class PortalBoxApplication:
                         elif self.db.is_training_card_for_equipment_type(uid, self.equipment_type_id):
                             logging.info("Trainer %s authorized for %s",
                                           uid, self.equipment_type)
+                            self.db.log_access_attempt(uid, self.equipment_id, True)
                             self.card_present = True
                             self.training_mode = True
                             self.authorized_uid = uid
@@ -406,7 +408,6 @@ class PortalBoxApplication:
 
             grace_count += 1
             self.box.set_buzzer(True)
-            logging.debug("Set display to flash yellow")
             self.box.flash_display(YELLOW, 100, 1, YELLOW)
             self.box.set_buzzer(False)
 
