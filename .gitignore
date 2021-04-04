@@ -23,3 +23,5 @@ pip-selfcheck.json
 
 # exclude editor temp files
 .vscode
+*.bak
+.*.bak
