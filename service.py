@@ -1,6 +1,10 @@
 #!python3
 
 """
+2021-04-05 Version   KJHass
+  - Defer database accesses until after user-visible action if possible
+  - Use caches of recently used user, proxy, and training cards
+
 2021-03-29 Version   KJHass
   - A training card is only accepted after a valid user card has been
     accepted. The box is purple while using a training card.
@@ -63,6 +67,18 @@ class PortalBoxApplication:
         os.system("echo portalbox_init > /tmp/boxactivity")
         os.system("echo False > /tmp/running")
 
+        # Caches for recent authorized users, training cards, proxy cards
+        # Card ID numbers are stored in this list
+        # Newest entries are at the **end** of the list
+        # To add a new id to the newest end of a list:
+        #    del self.proxies[0]
+        #    self.proxies.append(uid)
+        # To move an id to the "newest" end of a list:
+        #    self.trainers.remove(uid)
+        #    self.trainers.append(uid)
+        self.users = [""] * 100
+        self.trainers = [""] * 10
+        self.proxies = [""] * 10
 
     def __del__(self):
         '''
@@ -184,10 +200,23 @@ class PortalBoxApplication:
                     os.system("sync; shutdown -h now")
                 elif Database.USER_CARD == card_type:
                     logging.info("User card %s detected, authorized?", uid)
-                    if self.db.is_user_authorized_for_equipment_type(uid, self.equipment_type_id):
+                    if uid in self.users:
+                        logging.info("Cached user %s authorized for %s",
+                                uid,
+                                self.equipment_type)
+
+                        self.users.remove(uid)
+                        self.users.append(uid)
+
+                        self.run_session(uid)
+                    elif self.db.is_user_authorized_for_equipment_type(uid, self.equipment_type_id):
                         logging.info("User %s authorized for %s",
                                 uid,
                                 self.equipment_type)
+
+                        del self.users[0]
+                        self.users.append(uid)
+
                         self.run_session(uid)
                     else:
                         self.wait_for_unauthorized_card_removal(uid)
@@ -208,8 +237,6 @@ class PortalBoxApplication:
         '''
         Allow user to use the equipment
         '''
-        logging.info("Logging activation of %s to DB", self.equipment_type)
-        self.db.log_access_attempt(user_id, self.equipment_id, True)
         self.authorized_uid = user_id
         self.proxy_uid = -1
         self.training_mode = False
@@ -220,6 +247,8 @@ class PortalBoxApplication:
         self.box.set_equipment_power_on(True)
         sleep(0.05)
 
+        logging.info("Logging activation of %s to DB", self.equipment_type)
+        self.db.log_access_attempt(user_id, self.equipment_id, True)
         self.box.set_buzzer(False)
         logging.debug("Setting display to green")
         self.box.set_display_color(AUTH_COLOR)
@@ -383,28 +412,56 @@ class PortalBoxApplication:
                     logging.debug("Authorized card returned")
                     break
                 elif not self.training_mode: # trainers may not use proxy cards
-                    logging.debug("Checking if this is a proxy card")
-                    if Database.PROXY_CARD == self.db.get_card_type(uid):
+                    if uid in self.proxies:
                         self.card_present = True
                         self.proxy_uid = uid
-                        logging.debug("Authorized user using proxy card")
+                        self.proxies.remove(uid)
+                        self.proxies.append(uid)
+                        logging.debug("Authorized user -> cached proxy card")
                         break
-                    
-                    logging.debug("Checking if this is a training card")
-                    if Database.TRAINING_CARD == self.db.get_card_type(uid):
-                        logging.info("Training card %s detected, authorized?", uid)
+
+                    elif uid in self.trainers:
                         if self.proxy_uid > -1:
-                            logging.info("Training card can't be used with proxy")
-                        elif self.db.is_training_card_for_equipment_type(uid, self.equipment_type_id):
-                            logging.info("Trainer %s authorized for %s",
+                            logging.debug("Training disallowed with proxy")
+                        else:
+                            logging.info("Cached trainer %s authorized for %s",
                                           uid, self.equipment_type)
                             self.db.log_access_attempt(uid, self.equipment_id, True)
                             self.card_present = True
                             self.training_mode = True
                             self.authorized_uid = uid
+                            self.trainers.remove(uid)
+                            self.trainers.append(uid)
                             break
-                        logging.info("Trainer %s NOT authorized for %s",
-                                      uid, self.equipment_type)
+
+                    else:
+                        logging.debug("Checking database for card type")
+                        card_type == self.db.get_card_type(uid):
+                        if Database.PROXY_CARD == card_type:
+                            self.card_present = True
+                            self.proxy_uid = uid
+                            del self.proxies[0]
+                            self.proxies.append(uid)
+                            logging.debug("Authorized user -> proxy card")
+                            break
+                        
+                        if Database.TRAINING_CARD == card_type:
+                            logging.info("Training card %s detected, authorized?", uid)
+                            if self.proxy_uid > -1:
+                                logging.info("Training card disallowed with proxy")
+                            elif self.db.is_training_card_for_equipment_type(uid, self.equipment_type_id):
+                                logging.info("Trainer %s authorized for %s",
+                                              uid, self.equipment_type)
+                                self.db.log_access_attempt(uid, self.equipment_id, True)
+                                self.card_present = True
+                                self.training_mode = True
+                                del self.trainers[0]
+                                self.trainers.append(uid)
+                                self.authorized_uid = uid
+                                break
+                            else:
+                                logging.info("Trainer %s NOT authorized for %s",
+                                          uid, self.equipment_type)
 
             grace_count += 1
             self.box.set_buzzer(True)
@@ -571,7 +628,7 @@ if __name__ == "__main__":
     logging.debug("PortalBoxApplication ends")
 
     # Cleanup and exit
-    os.system("echo False > /tmp/running")
+    os.system("echo False > /tmp/running)
     service.box.cleanup()
     logging.debug("Shutting down logger")
     logging.shutdown()
