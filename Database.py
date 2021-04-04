@@ -1,5 +1,12 @@
 #!python3
 
+"""
+  2021-04-04 Version   KJHass
+    - Get "requires_training" and "requires_payment" just once rather than
+      every time a card is checked
+
+"""
+
 # from standard library
 import logging
 
@@ -188,6 +195,12 @@ class Database:
                 logging.debug("Fetched equipment profile")
             else:
                 logging.debug("Failed to fetch equipment profile")
+
+            query = ("SELECT requires_training, charge_policy_id > 2 FROM equipment_types WHERE id = %s")
+            cursor = connection.cursor()
+            cursor.execute(query, (equipment_type_id,))
+            (self.requires_training,self.requires_payment) = cursor.fetchone()
+
             cursor.close()
             if not self.use_persistent_connection:
                 connection.close()
@@ -269,7 +282,7 @@ class Database:
     def log_access_attempt(self, card_id, equipment_id, successful):
         '''
         Logs start time for user using a resource.
-        
+
         @param card_id: The ID read from the card presented by the user
         @param equipment_id: The ID assigned to the portal box
         @param successful: If login was successful (user is authorized)
@@ -299,7 +312,7 @@ class Database:
     def log_access_completion(self, card_id, equipment_id):
         '''
         Logs end time for user using a resource.
-        
+
         @param card_id: The ID read from the card presented by the user
         @param equipment_id: The ID assigned to the portal box
         @param successful: If login was successful (user is authorized)
@@ -340,12 +353,7 @@ class Database:
             else:
                 connection = self._connect()
 
-            query = ("SELECT requires_training, charge_policy_id > 2 FROM equipment_types WHERE id = %s")
-            cursor = connection.cursor()
-            cursor.execute(query, (equipment_type_id,))
-            
-            (requires_training,requires_payment) = cursor.fetchone()
-            if requires_training and requires_payment:
+            if self.requires_training and self.requires_payment:
                 # check balance
                 query = ("SELECT get_user_balance_for_card(%s)")
                 cursor.execute(query, (card_id,))
@@ -359,7 +367,7 @@ class Database:
                     (count,) = cursor.fetchone()
                     if 0 < count:
                         is_authorized = True
-            elif requires_training and not requires_payment:
+            elif self.requires_training and not self.requires_payment:
                 query = ("SELECT count(u.id) FROM users_x_cards AS u "
                 "INNER JOIN authorizations AS a ON a.user_id= u.user_id "
                 "WHERE u.card_id = %s AND a.equipment_type_id = %s")
@@ -367,7 +375,7 @@ class Database:
                 (count,) = cursor.fetchone()
                 if 0 < count:
                     is_authorized = True
-            elif not requires_training and requires_payment:
+            elif not self.requires_training and self.requires_payment:
                 # check balance
                 query = ("SELECT get_user_balance_for_card(%s)")
                 cursor.execute(query, (card_id,))
@@ -376,7 +384,7 @@ class Database:
                     is_authorized = True
             else:
                 # we don't require payment or training, user is implicitly authorized
-                is_authorized = True           
+                is_authorized = True
 
             cursor.close()
             if not self.use_persistent_connection:
@@ -385,7 +393,6 @@ class Database:
             logging.error("{}".format(err))
 
         return is_authorized
-
 
     def get_card_type(self, id):
         '''
