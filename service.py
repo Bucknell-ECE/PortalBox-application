@@ -91,7 +91,7 @@ class PortalBoxApplication:
         '''
         Actually get ready to run... we defered initialization in order to
         configure signal handlers in __main__ but they should now be in place
-        
+
         This corresponds to the transition from Start in FSM.odg see docs
         '''
         os.system("echo False > /tmp/running")
@@ -100,7 +100,7 @@ class PortalBoxApplication:
         logging.info("Setting display color to wipe red")
         self.box.set_display_color_wipe(RED, 10)
         logging.info("Started PortalBoxApplication.run()")
-        
+
         # Set 2 Figure out our identity
         mac_address = format(get_mac_address(), 'x')
         logging.info("Discovered Mac Address: %s", mac_address)
@@ -156,7 +156,7 @@ class PortalBoxApplication:
             self.location = profile[4]
             self.timeout_period = profile[5]
 
-            logging.info("Discovered identity. Type: %s(%s) Timeout: %s",
+            logging.info("Discovered identity. Type: %s(%s) Timeout: %s m",
                     self.equipment_type,
                     self.equipment_type_id,
                     self.timeout_period)
@@ -207,6 +207,7 @@ class PortalBoxApplication:
 
                         self.users.remove(uid)
                         self.users.append(uid)
+                        logging.debug(str(self.users))
 
                         self.run_session(uid)
                     elif self.db.is_user_authorized_for_equipment_type(uid, self.equipment_type_id):
@@ -216,6 +217,7 @@ class PortalBoxApplication:
 
                         del self.users[0]
                         self.users.append(uid)
+                        logging.debug(str(self.users))
 
                         self.run_session(uid)
                     else:
@@ -436,7 +438,7 @@ class PortalBoxApplication:
 
                     else:
                         logging.debug("Checking database for card type")
-                        card_type == self.db.get_card_type(uid):
+                        card_type = self.db.get_card_type(uid)
                         if Database.PROXY_CARD == card_type:
                             self.card_present = True
                             self.proxy_uid = uid
@@ -444,7 +446,7 @@ class PortalBoxApplication:
                             self.proxies.append(uid)
                             logging.debug("Authorized user -> proxy card")
                             break
-                        
+
                         if Database.TRAINING_CARD == card_type:
                             logging.info("Training card %s detected, authorized?", uid)
                             if self.proxy_uid > -1:
@@ -628,7 +630,7 @@ if __name__ == "__main__":
     logging.debug("PortalBoxApplication ends")
 
     # Cleanup and exit
-    os.system("echo False > /tmp/running)
+    os.system("echo False > /tmp/running")
     service.box.cleanup()
     logging.debug("Shutting down logger")
     logging.shutdown()
