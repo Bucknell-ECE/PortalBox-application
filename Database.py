@@ -198,7 +198,7 @@ class Database:
 
             query = ("SELECT requires_training, charge_policy_id > 2 FROM equipment_types WHERE id = %s")
             cursor = connection.cursor()
-            cursor.execute(query, (equipment_type_id,))
+            cursor.execute(query, (profile[1],))
             (self.requires_training,self.requires_payment) = cursor.fetchone()
 
             cursor.close()
@@ -353,6 +353,7 @@ class Database:
             else:
                 connection = self._connect()
 
+            cursor = connection.cursor()
             if self.requires_training and self.requires_payment:
                 # check balance
                 query = ("SELECT get_user_balance_for_card(%s)")
@@ -458,7 +459,7 @@ class Database:
 
         return valid
 
- 
+
     def get_user(self, id):
         '''
         Get details for the user identified by (card) id
@@ -489,3 +490,37 @@ class Database:
             logging.error("{}".format(err))
 
         return user
+
+    def is_user_trainer(self, id):
+        '''
+        Determine whether a particular user is a trainer or admin
+
+        Get the management_portal_access_level from the database. This is
+        an integer. A value of 1 is a normal user, 2 is a trainer, and 3
+        is an admin.
+
+        @return, True or False
+        '''
+        connection = self._connection
+
+        try:
+            if self.use_persistent_connection:
+                if not connection.is_connected():
+                    connection = self._reconnect()
+            else:
+                connection = self._connect()
+
+            query = ("SELECT u.management_portal_access_level_id FROM users_x_cards AS c "
+                "JOIN users AS u ON u.id = c.user_id WHERE c.card_id = %s")
+
+            cursor = connection.cursor()
+            cursor.execute(query, (id,))
+
+            access_level = cursor.fetchone()
+            cursor.close()
+            if not self.use_persistent_connection:
+                connection.close()
+        except mysql.connector.Error as err:
+            logging.error("{}".format(err))
+
+        return access_level > 1

@@ -71,14 +71,14 @@ class PortalBoxApplication:
         # Card ID numbers are stored in this list
         # Newest entries are at the **end** of the list
         # To add a new id to the newest end of a list:
-        #    del self.proxies[0]
-        #    self.proxies.append(uid)
+        #    del self.proxy_cards[0]
+        #    self.proxy_cards.append(uid)
         # To move an id to the "newest" end of a list:
-        #    self.trainers.remove(uid)
-        #    self.trainers.append(uid)
-        self.users = [""] * 100
-        self.trainers = [""] * 10
-        self.proxies = [""] * 10
+        #    self.training_cards.remove(uid)
+        #    self.training_cards.append(uid)
+        self.users = [""] * 5
+        self.training_cards = [""] * 10
+        self.proxy_cards = [""] * 10
 
     def __del__(self):
         '''
@@ -242,6 +242,7 @@ class PortalBoxApplication:
         self.authorized_uid = user_id
         self.proxy_uid = -1
         self.training_mode = False
+        self.user_is_trainer = False
 
         logging.debug("Setting display to green")
         self.box.set_display_color(AUTH_COLOR)
@@ -255,6 +256,9 @@ class PortalBoxApplication:
         logging.debug("Setting display to green")
         self.box.set_display_color(AUTH_COLOR)
 
+        logging.debug("Checking if user is a trainer or admin")
+        self.user_is_trainer = self.db.is_user_trainer(user_id)
+        
         if 0 < self.timeout_period:
             self.exceeded_time = False
             logging.debug("Starting equipment timer")
@@ -303,7 +307,6 @@ class PortalBoxApplication:
                 # we did not read a card
                 grace_count += 1
 
-            logging.debug("Setting display to flash red")
             self.box.flash_display(RED, 100, 1, RED)
         logging.debug("wait_for_unauthorized_card_removal() ends")
 
@@ -391,12 +394,17 @@ class PortalBoxApplication:
         logging.info("User card removed")
         self.card_present = False
         self.proxy_uid = -1
+
         logging.debug("Setting display to yellow")
         self.box.set_display_color(YELLOW)
+
         grace_count = 0
-        logging.info("Card Removed")
         self.box.has_button_been_pressed() # clear pending events
+
         logging.debug("Waiting for card to return")
+
+        previous_uid = -1
+
         while self.running and grace_count < 16:
             os.system("echo wait_auth_card_return > /tmp/boxactivity")
             # Check for button press
@@ -406,34 +414,39 @@ class PortalBoxApplication:
 
             # Scan for card
             uid = self.box.read_RFID_card()
-            if uid > -1:
+            if uid > -1 and uid != previous_uid:
                 # we read a card
+                previous_uid = uid
                 if uid == self.authorized_uid:
                     # card returned
                     self.card_present = True
                     logging.debug("Authorized card returned")
                     break
                 elif not self.training_mode: # trainers may not use proxy cards
-                    if uid in self.proxies:
+                    if uid in self.proxy_cards:
                         self.card_present = True
                         self.proxy_uid = uid
-                        self.proxies.remove(uid)
-                        self.proxies.append(uid)
-                        logging.debug("Authorized user -> cached proxy card")
+                        self.user_is_trainer = False
+                        self.proxy_cards.remove(uid)
+                        self.proxy_cards.append(uid)
+                        logging.info("Authorized user -> cached proxy card")
                         break
 
-                    elif uid in self.trainers:
+                    elif uid in self.training_cards:
                         if self.proxy_uid > -1:
-                            logging.debug("Training disallowed with proxy")
+                            logging.info("Training disallowed with proxy")
+                        elif not self.user_is_trainer:
+                            logging.info("User is not a trainer")
                         else:
-                            logging.info("Cached trainer %s authorized for %s",
-                                          uid, self.equipment_type)
+                            logging.info("Cached training card %s authorized",
+                                          uid)
                             self.db.log_access_attempt(uid, self.equipment_id, True)
                             self.card_present = True
                             self.training_mode = True
+                            self.user_is_trainer = False
                             self.authorized_uid = uid
-                            self.trainers.remove(uid)
-                            self.trainers.append(uid)
+                            self.training_cards.remove(uid)
+                            self.training_cards.append(uid)
                             break
 
                     else:
@@ -442,8 +455,9 @@ class PortalBoxApplication:
                         if Database.PROXY_CARD == card_type:
                             self.card_present = True
                             self.proxy_uid = uid
-                            del self.proxies[0]
-                            self.proxies.append(uid)
+                            self.user_is_trainer = False
+                            del self.proxy_cards[0]
+                            self.proxy_cards.append(uid)
                             logging.debug("Authorized user -> proxy card")
                             break
 
@@ -451,18 +465,21 @@ class PortalBoxApplication:
                             logging.info("Training card %s detected, authorized?", uid)
                             if self.proxy_uid > -1:
                                 logging.info("Training card disallowed with proxy")
+                            elif not self.user_is_trainer:
+                                logging.info("User is not a trainer")
                             elif self.db.is_training_card_for_equipment_type(uid, self.equipment_type_id):
-                                logging.info("Trainer %s authorized for %s",
-                                              uid, self.equipment_type)
+                                logging.info("Training card %s authorized",
+                                              uid)
                                 self.db.log_access_attempt(uid, self.equipment_id, True)
                                 self.card_present = True
                                 self.training_mode = True
-                                del self.trainers[0]
-                                self.trainers.append(uid)
+                                self.user_is_trainer = False
+                                del self.training_cards[0]
+                                self.training_cards.append(uid)
                                 self.authorized_uid = uid
                                 break
                             else:
-                                logging.info("Trainer %s NOT authorized for %s",
+                                logging.info("Training card %s NOT authorized for %s",
                                           uid, self.equipment_type)
 
             grace_count += 1
