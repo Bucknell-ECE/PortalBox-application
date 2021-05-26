@@ -99,7 +99,7 @@ class PortalBoxApplication:
 
         # Step 1 Do a bit of a dance to show we are running
         logging.info("Setting display color to wipe red")
-        self.box.set_display_color_wipe(RED, 10)
+        self.box.set_display_color_wipe(WHITE, 10)
         logging.info("Started PortalBoxApplication.run()")
 
         # Set 2 Figure out our identity
