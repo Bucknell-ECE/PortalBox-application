@@ -44,6 +44,7 @@ YELLOW = b'\xFF\xFF\x00'
 BLUE = b'\x00\x00\xFF'
 ORANGE = b'\xDF\x20\x00'
 PURPLE = b'\x80\x00\x80'
+WHITE = b'\xFF\xFF\xFF'
 
 AUTH_COLOR = GREEN
 PROXY_COLOR = ORANGE
@@ -126,7 +127,7 @@ class PortalBoxApplication:
             os.system("echo False > /tmp/running")
             sys.exit(1)
 
-        # give user hint we are makeing progress 
+        # give user hint we are makeing progress
         logging.debug("Setting display color to wipe orange")
         self.box.set_display_color_wipe(ORANGE, 10)
 
@@ -258,7 +259,7 @@ class PortalBoxApplication:
 
         logging.debug("Checking if user is a trainer or admin")
         self.user_is_trainer = self.db.is_user_trainer(user_id)
-        
+
         if 0 < self.timeout_period:
             self.exceeded_time = False
             logging.debug("Starting equipment timer")
@@ -537,7 +538,7 @@ class PortalBoxApplication:
             sleep(0.1)
 
         logging.debug("Grace period expired")
-        # grace period expired 
+        # grace period expired
         # stop the buzzer
         self.box.set_buzzer(False)
 
