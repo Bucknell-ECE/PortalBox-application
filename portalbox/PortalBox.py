@@ -3,6 +3,10 @@
 # PortalBox.py acts as a hardware abstraction layer exposing a somewhat
 # simple API to the hardware
 """
+2021-05-12 Version   KJHass
+  - read card twice before returning card id number or -1
+  - don't read RFID reader version for debugging, it doesn't help
+
 2021-03-25 Version   KJHass
   - imports os and periodically writes to files in /tmp to feed the watchdog
   - defines colors RED and YELLOW for display if RFID hangs
@@ -155,14 +159,6 @@ class PortalBox:
         '''
         rfid_hang = False
 
-        # Version should be 0x92 for Version 2 MFRC522
-        #                   0x91 for Version 1
-        version = self.RFIDReader.Read_MFRC522(MFRC522.VersionReg)
-        version = version & 0xFC
-        if version != 0x90:
-            logging.info("MFRC522 communication FAIL")
-            rfid_hang = True
-
         # These three registers appear to change to specific values if the
         # RFID module hangs
         reglist = [17, 20, 21]
@@ -189,24 +185,24 @@ class PortalBox:
            self.set_display_color(YELLOW)
            sleep(10)
 
-        # Scan for cards
-        (status, TagType) = self.RFIDReader.MFRC522_Request(MFRC522.PICC_REQIDL)
-
-        if MFRC522.MI_OK == status:
-            # Get the UID of the card
-            #logging.debug("MFRC522 request status, uid")
-            (status, uid) = self.RFIDReader.MFRC522_Anticoll()
-            #logging.debug("MFRC522 Request returned: %s, %s", status, uid)
+        # Scan for card...twice before giving up
+        for attempts in range(2):
+            (status, TagType) = self.RFIDReader.MFRC522_Request(MFRC522.PICC_REQIDL)
 
             if MFRC522.MI_OK == status:
-                # We have the UID, generate unsigned integer
-                # uid is a MSB order byte array of theoretically 4 bytes
-                result = 0
-                for i in range(4):
-                    result += (uid[i] << (8 * (3 - i)))
-                return result
-            logging.info("MFRC522 request status, MI_OK failed")
-            return -1
+                # Get the UID of the card
+                (status, uid) = self.RFIDReader.MFRC522_Anticoll()
+
+                if MFRC522.MI_OK == status:
+                    # We have the UID, generate unsigned integer
+                    # uid is a MSB order byte array of theoretically 4 bytes
+                    result = 0
+                    for i in range(4):
+                        result += (uid[i] << (8 * (3 - i)))
+                    # If we found a valid card ID, return it
+                    if result > 0:
+                        return result
+
         return -1
 
     def wake_display(self):
