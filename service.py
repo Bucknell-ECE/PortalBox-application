@@ -1,6 +1,15 @@
 #!python3
 
 """
+2021-05-12 Version   KJHass
+  - Feeding the watchdog is optional
+  - Do not write /tmp/running
+  - Don't read card twice, this is handled in PortalBox.py
+
+2021-04-12 Version   KJHass
+  - Do not use caches, logistics issues deauthorizing users
+  - Verify that user is trainer or admin before accepting training card
+
 2021-04-05 Version   KJHass
   - Defer database accesses until after user-visible action if possible
   - Use caches of recently used user, proxy, and training cards
@@ -64,21 +73,7 @@ class PortalBoxApplication:
         self.equipment_id = False
         self.box = PortalBox()
         self.settings = settings
-        os.system("echo portalbox_init > /tmp/boxactivity")
-        os.system("echo False > /tmp/running")
-
-        # Caches for recent authorized users, training cards, proxy cards
-        # Card ID numbers are stored in this list
-        # Newest entries are at the **end** of the list
-        # To add a new id to the newest end of a list:
-        #    del self.proxy_cards[0]
-        #    self.proxy_cards.append(uid)
-        # To move an id to the "newest" end of a list:
-        #    self.training_cards.remove(uid)
-        #    self.training_cards.append(uid)
-        self.users = [""] * 5
-        self.training_cards = [""] * 10
-        self.proxy_cards = [""] * 10
+        feed_watchdog("portalbox_init")
 
     def __del__(self):
         '''
@@ -94,7 +89,6 @@ class PortalBoxApplication:
 
         This corresponds to the transition from Start in FSM.odg see docs
         '''
-        os.system("echo False > /tmp/running")
 
         # Step 1 Do a bit of a dance to show we are running
         logging.info("Setting display color to wipe red")
@@ -123,7 +117,6 @@ class PortalBoxApplication:
         except Exception as e:
             # should be unreachable
             logging.error("{}".format(e))
-            os.system("echo False > /tmp/running")
             sys.exit(1)
 
         # give user hint we are makeing progress 
@@ -134,7 +127,7 @@ class PortalBoxApplication:
         profile = (-1,)
         self.running = True
         while self.running and 0 > profile[0]:
-            os.system("echo equipment_profile > /tmp/boxactivity")
+            feed_watchdog("equipment_profile")
             logging.info("Trying to get equipment profile")
             profile = self.db.get_equipment_profile(mac_address)
             if 0 > profile[0]:
@@ -183,7 +176,7 @@ class PortalBoxApplication:
         # Run... loop endlessly waiting for RFID cards
         logging.debug("Waiting for an access card")
         while self.running:
-            os.system("echo wait_for_a_card > /tmp/boxactivity")
+            feed_watchdog("wait_for_a_card")
             # Scan for card
             uid = self.box.read_RFID_card()
             if -1 < uid:
@@ -200,24 +193,10 @@ class PortalBoxApplication:
                     os.system("sync; shutdown -h now")
                 elif Database.USER_CARD == card_type:
                     logging.info("User card %s detected, authorized?", uid)
-                    if uid in self.users:
-                        logging.info("Cached user %s authorized for %s",
-                                uid,
-                                self.equipment_type)
-
-                        self.users.remove(uid)
-                        self.users.append(uid)
-                        logging.debug(str(self.users))
-
-                        self.run_session(uid)
-                    elif self.db.is_user_authorized_for_equipment_type(uid, self.equipment_type_id):
+                    if self.db.is_user_authorized_for_equipment_type(uid, self.equipment_type_id):
                         logging.info("User %s authorized for %s",
                                 uid,
                                 self.equipment_type)
-
-                        del self.users[0]
-                        self.users.append(uid)
-                        logging.debug(str(self.users))
 
                         self.run_session(uid)
                     else:
@@ -291,23 +270,17 @@ class PortalBoxApplication:
         logging.info("Card %s NOT authorized for %s", uid, self.equipment_type)
         self.db.log_access_attempt(uid, self.equipment_id, False)
 
-        # We need a grace_counter because consecutive card reads fail
-        grace_count = 0
-
         #loop endlessly waiting for shutdown or card to be removed
         logging.debug("Looping until not running or card removed")
-        while self.running and grace_count < 2:
-            os.system("echo wait_unauth_remove > /tmp/boxactivity")
+        while self.running:
+            feed_watchdog("wait_unauth_remove")
+            self.box.flash_display(RED, 100, 1, RED)
             # Scan for card
             uid = self.box.read_RFID_card()
-            if -1 < uid:
-                # we did read a card
-                grace_count = 0
-            else:
+            if uid < 0:
                 # we did not read a card
-                grace_count += 1
+                break
 
-            self.box.flash_display(RED, 100, 1, RED)
         logging.debug("wait_for_unauthorized_card_removal() ends")
 
 
@@ -317,8 +290,6 @@ class PortalBoxApplication:
         '''
         self.card_present = True
         self.proxy_uid = -1
-        # We have to have a grace_counter because consecutive card reads currently fail
-        grace_count = 0
 
         if self.training_mode:
             color_now = TRAINER_COLOR
@@ -328,7 +299,7 @@ class PortalBoxApplication:
         #loop endlessly waiting for shutdown or card to be removed
         logging.debug("Waiting for card removal or timeout")
         while self.running and self.card_present:
-            os.system("echo wait_auth_remove_timeout > /tmp/boxactivity")
+            feed_watchdog("wait_auth_remove_timeout")
             # check for timeout
             if self.exceeded_time:
                 logging.debug("Time exceeded, wait for timeout grace")
@@ -355,16 +326,10 @@ class PortalBoxApplication:
             # Scan for card
             uid = self.box.read_RFID_card()
             if -1 < uid and (uid == self.authorized_uid or uid == self.proxy_uid):
-                # we read an authorized card
-                grace_count = 0
+                pass
             else:
                 # we did not read a card or we read the wrong card
-                grace_count += 1
-
-                if grace_count > 2:
-                    self.wait_for_user_card_return()
-                    if self.card_present:
-                        grace_count = 0
+                self.wait_for_user_card_return()
 
             if -1 < self.proxy_uid:
                 color_now = PROXY_COLOR
@@ -406,7 +371,7 @@ class PortalBoxApplication:
         previous_uid = -1
 
         while self.running and grace_count < 16:
-            os.system("echo wait_auth_card_return > /tmp/boxactivity")
+            feed_watchdog("wait_auth_card_return")
             # Check for button press
             if self.box.has_button_been_pressed():
                 logging.debug("Button pressed")
@@ -423,64 +388,33 @@ class PortalBoxApplication:
                     logging.debug("Authorized card returned")
                     break
                 elif not self.training_mode: # trainers may not use proxy cards
-                    if uid in self.proxy_cards:
+                    logging.debug("Checking database for card type")
+                    card_type = self.db.get_card_type(uid)
+                    if Database.PROXY_CARD == card_type:
                         self.card_present = True
                         self.proxy_uid = uid
                         self.user_is_trainer = False
-                        self.proxy_cards.remove(uid)
-                        self.proxy_cards.append(uid)
-                        logging.info("Authorized user -> cached proxy card")
+                        logging.debug("Authorized user -> proxy card")
                         break
 
-                    elif uid in self.training_cards:
+                    if Database.TRAINING_CARD == card_type:
+                        logging.info("Training card %s detected, authorized?", uid)
                         if self.proxy_uid > -1:
-                            logging.info("Training disallowed with proxy")
+                            logging.info("Training card disallowed with proxy")
                         elif not self.user_is_trainer:
                             logging.info("User is not a trainer")
-                        else:
-                            logging.info("Cached training card %s authorized",
+                        elif self.db.is_training_card_for_equipment_type(uid, self.equipment_type_id):
+                            logging.info("Training card %s authorized",
                                           uid)
                             self.db.log_access_attempt(uid, self.equipment_id, True)
                             self.card_present = True
                             self.training_mode = True
                             self.user_is_trainer = False
                             self.authorized_uid = uid
-                            self.training_cards.remove(uid)
-                            self.training_cards.append(uid)
                             break
-
-                    else:
-                        logging.debug("Checking database for card type")
-                        card_type = self.db.get_card_type(uid)
-                        if Database.PROXY_CARD == card_type:
-                            self.card_present = True
-                            self.proxy_uid = uid
-                            self.user_is_trainer = False
-                            del self.proxy_cards[0]
-                            self.proxy_cards.append(uid)
-                            logging.debug("Authorized user -> proxy card")
-                            break
-
-                        if Database.TRAINING_CARD == card_type:
-                            logging.info("Training card %s detected, authorized?", uid)
-                            if self.proxy_uid > -1:
-                                logging.info("Training card disallowed with proxy")
-                            elif not self.user_is_trainer:
-                                logging.info("User is not a trainer")
-                            elif self.db.is_training_card_for_equipment_type(uid, self.equipment_type_id):
-                                logging.info("Training card %s authorized",
-                                              uid)
-                                self.db.log_access_attempt(uid, self.equipment_id, True)
-                                self.card_present = True
-                                self.training_mode = True
-                                self.user_is_trainer = False
-                                del self.training_cards[0]
-                                self.training_cards.append(uid)
-                                self.authorized_uid = uid
-                                break
-                            else:
-                                logging.info("Training card %s NOT authorized for %s",
-                                          uid, self.equipment_type)
+                        else:
+                            logging.info("Training card NOT authorized for %s",
+                                      uid, self.equipment_type)
 
             grace_count += 1
             self.box.set_buzzer(True)
@@ -507,13 +441,12 @@ class PortalBoxApplication:
         self.box.set_display_color(ORANGE)
         logging.debug("Starting grace period")
         while self.running and grace_count < 600:
-            os.system("echo grace_timeout > /tmp/boxactivity")
+            feed_watchdog("grace_timeout")
             #check for button press
             if self.box.has_button_been_pressed():
                 logging.info("Button was pressed, extending time out period")
                 uid = self.box.read_RFID_card()
-                uid2 = self.box.read_RFID_card() #try twice since reader fails consecutive reads
-                if -1 < uid or -1 < uid2:
+                if -1 < uid:
                     # Card is still present session renewed
                     logging.debug("Card still present, renew session")
                     return
@@ -536,9 +469,9 @@ class PortalBoxApplication:
 
             sleep(0.1)
 
-        logging.debug("Grace period expired")
         # grace period expired 
         # stop the buzzer
+        logging.debug("Grace period expired")
         self.box.set_buzzer(False)
 
         # shutdown now, do not wait for email or card removal
@@ -547,8 +480,7 @@ class PortalBoxApplication:
         # was forgotten card?
         logging.debug("Checking for forgotten card")
         uid = self.box.read_RFID_card()
-        uid2 = self.box.read_RFID_card() #try twice since reader fails consecutive reads
-        if -1 < uid or -1 < uid2:
+        if -1 < uid:
             # Card is still present
             logging.info("User card left in portal box. Sending user email.")
             logging.debug("Setting display to wipe blue")
@@ -564,11 +496,10 @@ class PortalBoxApplication:
             logging.debug("Setting display to red")
             self.box.set_display_color(RED)
             while self.running and self.card_present:
-                os.system("echo user_left_card > /tmp/boxactivity")
-            # wait for card to be removed... we need to make sure we don't have consecutive read failure
+                feed_watchdog("user_left_card")
+                # wait for card to be removed
                 uid = self.box.read_RFID_card()
-                uid2 = self.box.read_RFID_card() #try twice since reader fails consecutive reads
-                if 0 > uid and 0 > uid2:
+                if 0 > uid:
                     self.card_present = False
             logging.debug("Stopped running or card removed")
         else:
@@ -582,8 +513,7 @@ class PortalBoxApplication:
     def exit(self):
         ''' Stop looping in all run states '''
         logging.info("Service Exiting")
-        os.system("echo service_exit > /tmp/boxactivity")
-        os.system("echo False > /tmp/running")
+        feed_watchdog("service_exit")
         self.box.set_equipment_power_on(False)
         if self.running:
             if self.equipment_id:
@@ -599,7 +529,7 @@ class PortalBoxApplication:
     def handle_interupt(self, signum, frame):
         ''' Stop the service from a signal'''
         logging.debug("Interrupted")
-        os.system("echo service_interrupt > /tmp/boxactivity")
+        feed_watchdog("service_interrupt")
         self.exit()
 
 
@@ -618,12 +548,10 @@ if __name__ == "__main__":
     settings = configparser.ConfigParser()
     settings.read(config_file_path)
 
-    # Setup logging
+    # Setup logging, default level is ERROR
     if settings.has_option('logging', 'level'):
         if 'critical' == settings['logging']['level']:
             logging.basicConfig(level=logging.CRITICAL)
-        elif 'error' == settings['logging']['level']:
-            logging.basicConfig(level=logging.ERROR)
         elif 'warning' == settings['logging']['level']:
             logging.basicConfig(level=logging.WARNING)
         elif 'info' == settings['logging']['level']:
@@ -632,6 +560,21 @@ if __name__ == "__main__":
             logging.basicConfig(level=logging.DEBUG)
         else:
             logging.basicConfig(level=logging.ERROR)
+    else:
+        logging.basicConfig(level=logging.ERROR)
+
+    # Setup watchdog. If watchdog is enabled we periodically write
+    # a short status message to /tmp/boxactivity
+    if settings.has_option('watchdog', 'enabled') and \
+       settings['watchdog']['enabled'] == 'true':
+        logging.info("Feeding watchdog is enabled")
+        def feed_watchdog(message):
+            os.system("echo {0} > /tmp/boxactivity".format(message))
+    else:
+        logging.info("Feeding watchdog is disabled")
+        def feed_watchdog(message):
+            pass
+
 
     # Create Badge Box Service
     logging.debug("Creating PortalBoxApplication")
@@ -647,7 +590,6 @@ if __name__ == "__main__":
     logging.debug("PortalBoxApplication ends")
 
     # Cleanup and exit
-    os.system("echo False > /tmp/running")
     service.box.cleanup()
     logging.debug("Shutting down logger")
     logging.shutdown()
