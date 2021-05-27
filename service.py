@@ -55,7 +55,7 @@ TRAINER_COLOR = PURPLE
 
 class PortalBoxApplication:
     '''
-    wrap code as a class to allow for clean sharing of objects
+    Wrap code as a class to allow for clean sharing of objects
     between states
     '''
     def __init__(self, settings):
@@ -70,6 +70,8 @@ class PortalBoxApplication:
         self.settings = settings
         os.system("echo portalbox_init > /tmp/boxactivity")
         os.system("echo False > /tmp/running")
+
+        self.always_check_remote_database = True
 
         # Caches for recent authorized users, training cards, proxy cards
         # Card ID numbers are stored in this list
@@ -98,11 +100,15 @@ class PortalBoxApplication:
 
         This corresponds to the transition from Start in FSM.odg see docs
         '''
+
+
+
+
         os.system("echo False > /tmp/running")
 
         # Step 1 Do a bit of a dance to show we are running
         logging.info("Setting display color to wipe red")
-        self.box.set_display_color_wipe(RED, 10)
+        self.box.set_display_color_wipe(RED, 100)
         logging.info("Started PortalBoxApplication.run()")
 
         # Set 2 Figure out our identity
@@ -133,7 +139,7 @@ class PortalBoxApplication:
 
         # give user hint we are making progress
         logging.debug("Setting display color to wipe orange")
-        self.box.set_display_color_wipe(ORANGE, 10)
+        self.box.set_display_color_wipe(ORANGE, 100)
 
         # determine what we are
         profile = (-1,)
@@ -144,6 +150,11 @@ class PortalBoxApplication:
             profile = self.db.get_equipment_profile(mac_address)
             if 0 > profile[0]:
                 sleep(5)
+
+
+        #Setup a view varibles from the config
+
+        self.always_check_remote_database = settings['database_updates']['always_check_remote_database'].lower() in ("yes", "true", "1")
 
         # only run if we have role, which we might not if systemd asked us to
         # shutdown before we discovered a role
@@ -191,6 +202,10 @@ class PortalBoxApplication:
         logging.debug("Waiting for an access card")
         while self.running:
             os.system("echo wait_for_a_card > /tmp/boxactivity")
+            
+            # Update the local DataBase from the server
+            self.update_local_database()
+
             # Scan for card
             uid = self.box.read_RFID_card()
             if -1 < uid:
@@ -217,7 +232,7 @@ class PortalBoxApplication:
                         logging.debug(str(self.users))
 
                         self.run_session(uid)
-                    elif self.db.is_user_authorized_for_equipment_type(uid, self.equipment_type_id):
+                    elif self.is_user_authorized_for_equipment_type(uid, self.equipment_type_id):
                         logging.info("User %s authorized for %s",
                                 uid,
                                 self.equipment_type)
@@ -291,11 +306,11 @@ class PortalBoxApplication:
         '''
 
         #Check if we should always check the remote database
-        if(settings['database_updates']['always_check_database'].lower() in ("yes", "true", "1")):
+        if(self.always_check_remote_database):
             return self.db.is_user_authorized_for_equipment_type(uid, equipment_type_id)
         else:
             #Unpickle the local database and see if the equipment_type_id is in it
-            user_auths = pickle.load(open(os.path.join(sys.path[0], LOCAL_DATABASE_FILE_PATH),"r"))
+            user_auths = pickle.load(open(os.path.join(sys.path[0], LOCAL_DATABASE_FILE_PATH),"rb"))
             return equipment_type_id in user_auths[uid][1]
 
     def update_local_database(self):
@@ -307,21 +322,23 @@ class PortalBoxApplication:
         (list of ints)equipment_type's they are authorized to use
         '''
 
+        logging.debug("Getting Database from the server")
         user_info = self.db.get_user_auth();
+
         user_dict = {}
         for x in user_info:
-            if x[0] not in user_dict.keys():
-                user_dict[x[0]] = [x[1], [x[2]]]
+            card_id = x[0]
+            user_id = x[1]
+            equipment_type = x[2]
+            if card_id not in user_dict.keys():
+                user_dict[card_id] = [user_id, [equipment_type]]
             else:
-                user_dict[x[0]][1].append(x[2])
-
-        f = open(os.path.join(sys.path[0], "test.txt"), "w")
-        for x in user_dict.keys:
-            f.write(str(x) + ":" + str(user_dict[x]) + "\n")
-
+                user_dict[card_id][1].append(equipment_type)
 
         local_database_file = open(os.path.join(sys.path[0], LOCAL_DATABASE_FILE_PATH), "wb")
         pickle.dump(user_dict,local_database_file)
+
+        logging.debug("Finished getting database from Server")
 
 
 

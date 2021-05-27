@@ -511,9 +511,9 @@ class Database:
             else:
                 connection = self._connect()
 
-            query = ("SELECT users_x_cards.card_id, users_x_cards.user_id, authorizations.equipment_type_id FROM users_x_cards \
-                      JOIN authorizations \
-                        ON users_x_cards.user_id = authorizations.user_id")
+            query = ("SELECT c.card_id, c.user_id, a.equipment_type_id FROM users_x_cards AS c \
+                      JOIN authorizations AS a \
+                        ON c.user_id = a.user_id")
 
             cursor = connection.cursor()
             cursor.execute(query)
