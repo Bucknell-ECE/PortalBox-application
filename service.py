@@ -311,12 +311,15 @@ class PortalBoxApplication:
         user_dict = {}
         for x in user_info:
             if x[0] not in user_dict.keys():
-                user_dict[x] = [x[1], [x[2]]]
+                user_dict[x[0]] = [x[1], [x[2]]]
             else:
-                user_dict[x][1].append(x[2])
+                user_dict[x[0]][1].append(x[2])
+
         f = open(os.path.join(sys.path[0], "test.txt"), "w")
-        for x in user_dict:
+        for x in user_dict.keys:
             f.write(str(x) + ":" + str(user_dict[x]) + "\n")
+
+
         local_database_file = open(os.path.join(sys.path[0], LOCAL_DATABASE_FILE_PATH), "wb")
         pickle.dump(user_dict,local_database_file)
 
