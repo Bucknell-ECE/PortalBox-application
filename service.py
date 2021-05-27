@@ -27,6 +27,7 @@ import os
 import signal
 import sys
 import threading
+import pickle
 from time import sleep, time
 from uuid import getnode as get_mac_address
 
@@ -37,6 +38,8 @@ from Emailer import Emailer
 
 # Definitions aka constants
 DEFAULT_CONFIG_FILE_PATH = "config.ini"
+
+LOCAL_DATABASE_FILE_PATH = "local-data.p"
 
 RED = b'\xFF\x00\x00'
 GREEN = b'\x00\xFF\x00'
@@ -99,7 +102,7 @@ class PortalBoxApplication:
 
         # Step 1 Do a bit of a dance to show we are running
         logging.info("Setting display color to wipe red")
-        self.box.set_display_color_wipe(WHITE, 10)
+        self.box.set_display_color_wipe(RED, 10)
         logging.info("Started PortalBoxApplication.run()")
 
         # Set 2 Figure out our identity
@@ -128,7 +131,7 @@ class PortalBoxApplication:
             os.system("echo False > /tmp/running")
             sys.exit(1)
 
-        # give user hint we are makeing progress
+        # give user hint we are making progress
         logging.debug("Setting display color to wipe orange")
         self.box.set_display_color_wipe(ORANGE, 10)
 
@@ -276,6 +279,31 @@ class PortalBoxApplication:
         self.db.log_access_completion(user_id, self.equipment_id)
         self.authorized_uid = -1
         logging.debug("run_session() ends")
+
+##TODO RENAME THIS
+    def is_user_authorized_for_equipment_type(self, uid, equipment_type_id):
+        '''
+        Determines whether or not the user is authorized for the equipment type
+
+        @return a boolean of whether or not the user is authorized for the equipment
+        '''
+
+        #Check if we should always check the remote database
+        if(settings['database_updates']['always_check_database'].lower() in ("yes", "true", "1")):
+            return self.db.is_user_authorized_for_equipment_type(uid, equipment_type_id)
+        else:
+            #Unpickle the local database and see if the equipment_type_id is in it
+            user_auths = pickle.load(open(LOCAL_DATABASE_FILE_PATH,"r"))
+            return equipment_type_id in user_auths[uid]
+
+    def update_local_database(self):
+        '''
+        Updates the local data base from the sql server
+        the format of the local database is a dictionary where the keys are the card IDs
+        and the values are a list of the equipment types they are authorized to use
+        '''
+
+        print("test")
 
 
     def timeout(self):
@@ -621,8 +649,6 @@ if __name__ == "__main__":
     settings.read(config_file_path)
 
     # Setup logging
-    # logging.basicConfig(filename='example1.log', encoding='utf-8', level=logging.DEBUG)
-    # logging.basicConfig(filename='example2.log',filemode = "w" encoding='utf-8', level=logging.INFO)
     if settings.has_option('logging', 'level'):
         if 'critical' == settings['logging']['level']:
             logging.basicConfig(level=logging.CRITICAL)
@@ -630,10 +656,10 @@ if __name__ == "__main__":
             logging.basicConfig(level=logging.ERROR)
         elif 'warning' == settings['logging']['level']:
             logging.basicConfig(level=logging.WARNING)
-        # elif 'info' == settings['logging']['level']:
-        #     logging.basicConfig(level=logging.INFO)
-        # elif 'debug' == settings['logging']['level']:
-        #     logging.basicConfig(level=logging.DEBUG)
+        elif 'info' == settings['logging']['level']:
+            logging.basicConfig(level=logging.INFO)
+        elif 'debug' == settings['logging']['level']:
+            logging.basicConfig(level=logging.DEBUG)
         else:
             logging.basicConfig(level=logging.ERROR)
 

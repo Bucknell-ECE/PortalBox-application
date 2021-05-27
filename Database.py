@@ -490,9 +490,11 @@ class Database:
             logging.error("{}".format(err))
 
         return user
+
+
     def get_user_auth(self):
         '''
-        Testing function
+        Gets a list of users and the machine types they are authorized to use
         '''
         connection = self._connection
 
@@ -503,14 +505,16 @@ class Database:
             else:
                 connection = self._connect()
 
-            query = ("SELECT * FROM authorizations")
+            query = ("SELECT card_id, equipment_type_id FROM users_x_cards \
+                      JOIN authorizations \
+                        ON users_x_cards.user_id = authorizations.user_id")
 
             cursor = connection.cursor()
             cursor.execute(query)
 
             user = cursor.fetchAll()
-            f = open("testFile.txt", "a")
-            f.write(string(user))
+            f = open("testFile.txt", "w")
+            f.write(str(user))
             cursor.close()
             if not self.use_persistent_connection:
                 connection.close()
@@ -550,4 +554,4 @@ class Database:
         except mysql.connector.Error as err:
             logging.error("{}".format(err))
 
-        return access_level > 1
+        return access_level[0] > 1
