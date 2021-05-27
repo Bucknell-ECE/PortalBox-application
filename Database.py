@@ -400,7 +400,7 @@ class Database:
         Get the type of the card identified by id
 
         @return an integer: -1 for card not found, 1 for shutdown card, 2 for
-            proxy card, 3 for training card, and 4 for user card 
+            proxy card, 3 for training card, and 4 for user card
         '''
         type_id = -1
         connection = self._connection
@@ -490,7 +490,34 @@ class Database:
             logging.error("{}".format(err))
 
         return user
+    def get_user_auth(self):
+        '''
+        Testing function
+        '''
+        connection = self._connection
 
+        try:
+            if self.use_persistent_connection:
+                if not connection.is_connected():
+                    connection = self._reconnect()
+            else:
+                connection = self._connect()
+
+            query = ("SELECT * FROM authorizations")
+
+            cursor = connection.cursor()
+            cursor.execute(query)
+
+            user = cursor.fetchAll()
+            f = open("testFile.txt", "a")
+            f.write(string(user))
+            cursor.close()
+            if not self.use_persistent_connection:
+                connection.close()
+        except mysql.connector.Error as err:
+            logging.error("{}".format(err))
+
+        return user
     def is_user_trainer(self, id):
         '''
         Determine whether a particular user is a trainer or admin

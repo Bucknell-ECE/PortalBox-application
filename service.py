@@ -111,6 +111,7 @@ class PortalBoxApplication:
         try:
             logging.debug("Creating database instance")
             self.db = Database(self.settings['db'])
+            self.db.get_user_auth()
             logging.info("Connected to Database")
         except Exception as e:
             logging.error("{}".format(e))
