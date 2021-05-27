@@ -400,7 +400,7 @@ class Database:
         Get the type of the card identified by id
 
         @return an integer: -1 for card not found, 1 for shutdown card, 2 for
-            proxy card, 3 for training card, and 4 for user card 
+            proxy card, 3 for training card, and 4 for user card
         '''
         type_id = -1
         connection = self._connection
@@ -523,4 +523,4 @@ class Database:
         except mysql.connector.Error as err:
             logging.error("{}".format(err))
 
-        return access_level > 1
+        return access_level[0] > 1

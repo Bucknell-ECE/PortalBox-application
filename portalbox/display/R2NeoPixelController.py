@@ -28,7 +28,7 @@ class R2NeoPixelController(AbstractController):
         Connect to Arduino
         '''
         AbstractController.__init__(self)
-        print(settings)
+        logging.debug(str(settings))
         if 'sleep_color' in settings["cosmetics"]:
             self.sleep_color = settings["cosmetics"]['sleep_color']
         else:
