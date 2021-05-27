@@ -102,7 +102,6 @@ class PortalBoxApplication:
         os.system("echo False > /tmp/running")
 
         # Configure colors
-        # There might be a more elegent solution to this
         if("auth_color" in self.settings):
             self.auth_color = bytes.fromhex(self.settings["cosmetics"]["auth_color"])
         if("proxy_color" in self.settings):
