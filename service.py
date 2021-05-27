@@ -62,8 +62,9 @@ class PortalBoxApplication:
         self.exceeded_time = False
         self.running = False
         self.equipment_id = False
-        self.box = PortalBox()
         self.settings = settings
+        #self.box = PortalBox(self.settings)
+
         os.system("echo portalbox_init > /tmp/boxactivity")
         os.system("echo False > /tmp/running")
 
@@ -109,7 +110,7 @@ class PortalBoxApplication:
         if("trainer_color" in self.settings):
             self.trainer_color = self.settings["cosmetics"]["trainer_color"]
 
-
+        self.box = PortalBox(self.settings)
 
         # Step 1 Do a bit of a dance to show we are running
         logging.info("Setting display color to wipe red")

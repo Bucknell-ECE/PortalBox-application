@@ -58,7 +58,7 @@ class PortalBox:
     '''
     Wrapper to manage peripherals
     '''
-    def __init__(self):
+    def __init__(self, settings):
         #detect raspberry pi version
         self.is_pi_zero_w = REVISION_ID_RASPBERRY_PI_0_W == get_revision()
 
@@ -178,7 +178,7 @@ class PortalBox:
                 self.outlist[reg] = regval
 
        # If the RFID module hangs then we need to restart the portal-box
-       # service. This is an infinite loop...the watchdog timer should 
+       # service. This is an infinite loop...the watchdog timer should
        # detect this and restart the service. Meanwhile, we beep and an
        # flash a red and yellow display
         while rfid_hang:
