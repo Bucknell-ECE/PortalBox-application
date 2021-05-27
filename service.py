@@ -621,6 +621,8 @@ if __name__ == "__main__":
     settings.read(config_file_path)
 
     # Setup logging
+    # logging.basicConfig(filename='example1.log', encoding='utf-8', level=logging.DEBUG)
+    # logging.basicConfig(filename='example2.log',filemode = "w" encoding='utf-8', level=logging.INFO)
     if settings.has_option('logging', 'level'):
         if 'critical' == settings['logging']['level']:
             logging.basicConfig(level=logging.CRITICAL)
@@ -628,10 +630,10 @@ if __name__ == "__main__":
             logging.basicConfig(level=logging.ERROR)
         elif 'warning' == settings['logging']['level']:
             logging.basicConfig(level=logging.WARNING)
-        elif 'info' == settings['logging']['level']:
-            logging.basicConfig(level=logging.INFO)
-        elif 'debug' == settings['logging']['level']:
-            logging.basicConfig(level=logging.DEBUG)
+        # elif 'info' == settings['logging']['level']:
+        #     logging.basicConfig(level=logging.INFO)
+        # elif 'debug' == settings['logging']['level']:
+        #     logging.basicConfig(level=logging.DEBUG)
         else:
             logging.basicConfig(level=logging.ERROR)
 
