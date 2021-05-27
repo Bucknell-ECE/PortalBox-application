@@ -495,6 +495,12 @@ class Database:
     def get_user_auth(self):
         '''
         Gets a list of users and the machine types they are authorized to use
+
+        @return a list of tuples consisting of
+        (int)card_id,
+        (int)user_id,
+        (int)equipment_type
+
         '''
         connection = self._connection
 
@@ -505,23 +511,21 @@ class Database:
             else:
                 connection = self._connect()
 
-            query = ("SELECT card_id, equipment_type_id FROM users_x_cards \
+            query = ("SELECT card_id, user_id, equipment_type_id FROM users_x_cards \
                       JOIN authorizations \
                         ON users_x_cards.user_id = authorizations.user_id")
 
             cursor = connection.cursor()
             cursor.execute(query)
 
-            user = cursor.fetchAll()
-            f = open("testFile.txt", "w")
-            f.write(str(user))
+            user_auths = cursor.fetchall()
             cursor.close()
             if not self.use_persistent_connection:
                 connection.close()
         except mysql.connector.Error as err:
             logging.error("{}".format(err))
 
-        return user
+        return user_auths
     def is_user_trainer(self, id):
         '''
         Determine whether a particular user is a trainer or admin

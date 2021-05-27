@@ -172,6 +172,8 @@ class PortalBoxApplication:
             self.timeout_period *= 60 # python threading wants seconds, DB has minutes
             self.proxy_uid = -1
             self.training_mode = False
+            logging.info("Intially updating local database")
+            self.update_local_database()
             logging.info("Starting to wait for access card")
             self.wait_for_access_card()
         else:
@@ -300,10 +302,24 @@ class PortalBoxApplication:
         '''
         Updates the local data base from the sql server
         the format of the local database is a dictionary where the keys are the card IDs
-        and the values are a list of the equipment types they are authorized to use
+        and the value is a list consisting of
+        (int)user_id,
+        (list of ints)equipment_type's they are authorized to use
         '''
 
-        print("test")
+        user_info = self.db.get_user_auth();
+        user_dict = {}
+        for x in user_info:
+            if x[0] not in user_dict.keys():
+                user_dict[x] = [x[1], [x[2]]]
+            else:
+                user_dict[x][1].append(x[2])
+        f = open(os.path.join(sys.path[0], "test.txt"), "w")
+        for x in user_dict:
+            f.write(str(x) + ":" + str(user_dict[x]) + "\n")
+        local_database_file = open(os.path.join(sys.path[0], "LOCAL_DATABASE_FILE_PATH"), "wb")
+        pickle.dump(user_dict,local_database_file)
+
 
 
     def timeout(self):
