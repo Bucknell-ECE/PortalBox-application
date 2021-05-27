@@ -85,7 +85,7 @@ class PortalBox:
         if self.is_pi_zero_w:
             logging.debug("Creating display controller")
             from .display.R2NeoPixelController import R2NeoPixelController
-            self.display_controller = R2NeoPixelController()
+            self.display_controller = R2NeoPixelController(settings)
         else:
             logging.info("Did not connect to display driver, display methods will be unavailable")
             self.display_controller = None
