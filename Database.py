@@ -511,7 +511,7 @@ class Database:
             else:
                 connection = self._connect()
 
-            query = ("SELECT card_id, user_id, equipment_type_id FROM users_x_cards \
+            query = ("SELECT users_x_cards.card_id, users_x_cards.user_id, authorizations.equipment_type_id FROM users_x_cards \
                       JOIN authorizations \
                         ON users_x_cards.user_id = authorizations.user_id")
 

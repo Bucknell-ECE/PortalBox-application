@@ -295,8 +295,8 @@ class PortalBoxApplication:
             return self.db.is_user_authorized_for_equipment_type(uid, equipment_type_id)
         else:
             #Unpickle the local database and see if the equipment_type_id is in it
-            user_auths = pickle.load(open(LOCAL_DATABASE_FILE_PATH,"r"))
-            return equipment_type_id in user_auths[uid]
+            user_auths = pickle.load(open(os.path.join(sys.path[0], LOCAL_DATABASE_FILE_PATH),"r"))
+            return equipment_type_id in user_auths[uid][1]
 
     def update_local_database(self):
         '''
@@ -317,7 +317,7 @@ class PortalBoxApplication:
         f = open(os.path.join(sys.path[0], "test.txt"), "w")
         for x in user_dict:
             f.write(str(x) + ":" + str(user_dict[x]) + "\n")
-        local_database_file = open(os.path.join(sys.path[0], "LOCAL_DATABASE_FILE_PATH"), "wb")
+        local_database_file = open(os.path.join(sys.path[0], LOCAL_DATABASE_FILE_PATH), "wb")
         pickle.dump(user_dict,local_database_file)
 
 
