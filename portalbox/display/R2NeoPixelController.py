@@ -30,7 +30,7 @@ class R2NeoPixelController(AbstractController):
         AbstractController.__init__(self)
 
         if 'sleep_color' in settings:
-            self.sleep_color = settings['sleep_color']
+            self.sleep_color = settings["cosmetics"]['sleep_color']
         else:
             self.sleep_color = b'\x00\x00\xFF'
 

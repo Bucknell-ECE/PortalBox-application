@@ -70,7 +70,6 @@ class PortalBoxApplication:
         self.auth_color = RED
         self.proxy_color = ORANGE
         self.trainer_color = PURPLE
-        self.idle_color = BLUE
 
         # Caches for recent authorized users, training cards, proxy cards
         # Card ID numbers are stored in this list
@@ -109,8 +108,6 @@ class PortalBoxApplication:
             self.proxy_color = self.settings["cosmetics"]["proxy_color"]
         if("trainer_color" in self.settings):
             self.trainer_color = self.settings["cosmetics"]["trainer_color"]
-        if("idle_color" in self.settings):
-            self.idle_color = self.settings["cosmetics"]["idle_color"]
 
 
 
@@ -570,7 +567,7 @@ class PortalBoxApplication:
             # Card is still present
             logging.info("User card left in portal box. Sending user email.")
             logging.debug("Setting display to wipe blue")
-            self.box.set_display_color_wipe(self.idle_color, 50)
+            self.box.set_display_color_wipe(BLUE, 50)
             logging.debug("Getting user email ID from DB")
             user = self.db.get_user(self.authorized_uid)
             try:
