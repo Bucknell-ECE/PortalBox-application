@@ -44,10 +44,10 @@ YELLOW = b'\xFF\xFF\x00'
 BLUE = b'\x00\x00\xFF'
 ORANGE = b'\xDF\x20\x00'
 PURPLE = b'\x80\x00\x80'
-
-AUTH_COLOR = GREEN
-PROXY_COLOR = ORANGE
-TRAINER_COLOR = PURPLE
+#
+# AUTH_COLOR = GREEN
+# PROXY_COLOR = ORANGE
+# TRAINER_COLOR = PURPLE
 
 class PortalBoxApplication:
     '''
@@ -66,6 +66,11 @@ class PortalBoxApplication:
         self.settings = settings
         os.system("echo portalbox_init > /tmp/boxactivity")
         os.system("echo False > /tmp/running")
+
+        self.auth_color = RED
+        self.proxy_color = ORANGE
+        self.trainer_color = PURPLE
+        self.idle_color = BLUE
 
         # Caches for recent authorized users, training cards, proxy cards
         # Card ID numbers are stored in this list
@@ -95,6 +100,19 @@ class PortalBoxApplication:
         This corresponds to the transition from Start in FSM.odg see docs
         '''
         os.system("echo False > /tmp/running")
+
+        # Configure colors
+        # There might be a more elegent solution to this
+        if("auth_color" in self.settings):
+            self.auth_color = self.settings["cosmetics"]["auth_color"]
+        if("proxy_color" in self.settings):
+            self.proxy_color = self.settings["cosmetics"]["proxy_color"]
+        if("trainer_color" in self.settings):
+            self.trainer_color = self.settings["cosmetics"]["trainer_color"]
+        if("idle_color" in self.settings):
+            self.idle_color = self.settings["cosmetics"]["idle_color"]
+
+
 
         # Step 1 Do a bit of a dance to show we are running
         logging.info("Setting display color to wipe red")
@@ -126,7 +144,7 @@ class PortalBoxApplication:
             os.system("echo False > /tmp/running")
             sys.exit(1)
 
-        # give user hint we are makeing progress 
+        # give user hint we are makeing progress
         logging.debug("Setting display color to wipe orange")
         self.box.set_display_color_wipe(ORANGE, 10)
 
@@ -245,7 +263,7 @@ class PortalBoxApplication:
         self.user_is_trainer = False
 
         logging.debug("Setting display to green")
-        self.box.set_display_color(AUTH_COLOR)
+        self.box.set_display_color(self.auth_color)
         self.box.set_buzzer(True)
         self.box.set_equipment_power_on(True)
         sleep(0.05)
@@ -254,11 +272,11 @@ class PortalBoxApplication:
         self.db.log_access_attempt(user_id, self.equipment_id, True)
         self.box.set_buzzer(False)
         logging.debug("Setting display to green")
-        self.box.set_display_color(AUTH_COLOR)
+        self.box.set_display_color(self.auth_color)
 
         logging.debug("Checking if user is a trainer or admin")
         self.user_is_trainer = self.db.is_user_trainer(user_id)
-        
+
         if 0 < self.timeout_period:
             self.exceeded_time = False
             logging.debug("Starting equipment timer")
@@ -321,9 +339,9 @@ class PortalBoxApplication:
         grace_count = 0
 
         if self.training_mode:
-            color_now = TRAINER_COLOR
+            color_now = self.trainer_color
         else:
-            color_now = AUTH_COLOR
+            color_now = self.auth_color
 
         #loop endlessly waiting for shutdown or card to be removed
         logging.debug("Waiting for card removal or timeout")
@@ -341,11 +359,11 @@ class PortalBoxApplication:
                     if self.card_present:
                             grace_count = 0
                             if self.proxy_uid > -1:
-                                color_now = PROXY_COLOR
+                                color_now = self.proxy_color
                             elif self.training_mode:
-                                color_now = TRAINER_COLOR
+                                color_now = self.trainer_color
                             else:
-                                color_now = AUTH_COLOR
+                                color_now = self.auth_color
                     self.activation_timeout = threading.Timer(self.timeout_period, self.timeout)
                     self.activation_timeout.start()
                 else:
@@ -367,11 +385,11 @@ class PortalBoxApplication:
                         grace_count = 0
 
             if -1 < self.proxy_uid:
-                color_now = PROXY_COLOR
+                color_now = self.proxy_color
             elif self.training_mode:
-                color_now = TRAINER_COLOR
+                color_now = self.trainer_color
             else:
-                color_now = AUTH_COLOR
+                color_now = self.auth_color
 
             self.box.set_display_color(color_now)
             sleep(0.1)
@@ -537,7 +555,7 @@ class PortalBoxApplication:
             sleep(0.1)
 
         logging.debug("Grace period expired")
-        # grace period expired 
+        # grace period expired
         # stop the buzzer
         self.box.set_buzzer(False)
 
@@ -552,7 +570,7 @@ class PortalBoxApplication:
             # Card is still present
             logging.info("User card left in portal box. Sending user email.")
             logging.debug("Setting display to wipe blue")
-            self.box.set_display_color_wipe(BLUE, 50)
+            self.box.set_display_color_wipe(self.idle_color, 50)
             logging.debug("Getting user email ID from DB")
             user = self.db.get_user(self.authorized_uid)
             try:
