@@ -104,11 +104,11 @@ class PortalBoxApplication:
         # Configure colors
         # There might be a more elegent solution to this
         if("auth_color" in self.settings):
-            self.auth_color = self.settings["cosmetics"]["auth_color"]
+            self.auth_color = bytes.fromhex(self.settings["cosmetics"]["auth_color"])
         if("proxy_color" in self.settings):
-            self.proxy_color = self.settings["cosmetics"]["proxy_color"]
+            self.proxy_color = bytes.fromhex(self.settings["cosmetics"]["proxy_color"])
         if("trainer_color" in self.settings):
-            self.trainer_color = self.settings["cosmetics"]["trainer_color"]
+            self.trainer_color = bytes.fromhex(self.settings["cosmetics"]["trainer_color"])
 
         self.box = PortalBox(self.settings)
 
