@@ -90,6 +90,12 @@ class PortalBox:
             logging.info("Did not connect to display driver, display methods will be unavailable")
             self.display_controller = None
 
+        # Get buzzer enabled from settings
+        self.buzzer_enabled = True
+        if "buzzer_enabled" in settings["cosmetics"]:
+            if settings["cosmetics"]["buzzer_enabled"].lower() in ("no", "false", "0"):
+                self.buzzer_enabled = False
+
         # Create a proxy for the RFID card reader
         logging.debug("Creating RFID reader")
         self.RFIDReader = MFRC522()
@@ -127,7 +133,10 @@ class PortalBox:
         :param state: True -> Buzzer On; False -> Buzzer Off
         :return: None
         '''
-        GPIO.output(GPIO_BUZZER_PIN, state)
+        if(buzzer_enabled):
+            GPIO.output(GPIO_BUZZER_PIN, state)
+        else:
+            return
 
 
     def get_button_state(self):
