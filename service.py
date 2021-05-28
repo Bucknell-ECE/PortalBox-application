@@ -68,7 +68,8 @@ class PortalBoxApplication:
         os.system("echo portalbox_init > /tmp/boxactivity")
         os.system("echo False > /tmp/running")
 
-        self.auth_color = RED
+        #Default values for these colors
+        self.auth_color = GREEN
         self.proxy_color = ORANGE
         self.trainer_color = PURPLE
 
@@ -259,7 +260,7 @@ class PortalBoxApplication:
         self.training_mode = False
         self.user_is_trainer = False
 
-        logging.debug("Setting display to green")
+        logging.debug("Setting display to the authorized color")
         self.box.set_display_color(self.auth_color)
         self.box.set_buzzer(True)
         self.box.set_equipment_power_on(True)
@@ -268,7 +269,7 @@ class PortalBoxApplication:
         logging.info("Logging activation of %s to DB", self.equipment_type)
         self.db.log_access_attempt(user_id, self.equipment_id, True)
         self.box.set_buzzer(False)
-        logging.debug("Setting display to green")
+        logging.debug("Setting display to the authorized color") ## Is this redundent?
         self.box.set_display_color(self.auth_color)
 
         logging.debug("Checking if user is a trainer or admin")
