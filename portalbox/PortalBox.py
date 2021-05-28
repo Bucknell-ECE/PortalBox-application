@@ -133,7 +133,7 @@ class PortalBox:
         :param state: True -> Buzzer On; False -> Buzzer Off
         :return: None
         '''
-        if(buzzer_enabled):
+        if(self.buzzer_enabled):
             GPIO.output(GPIO_BUZZER_PIN, state)
         else:
             return
