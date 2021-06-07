@@ -93,10 +93,10 @@ class PortalBoxApplication:
         self.box.cleanup()
 
     def testTimes(self):
-        logging.debug("Starting Testing")
-        for x in range(1000):
-            sleep(.5)
-            self.update_local_database()
+        # logging.debug("Starting Testing")
+        # for x in range(1000):
+        #     sleep(.5)
+        #     self.update_local_database()
         updatelocalDBTimes = open(os.path.join(sys.path[0], "pullPickelTime.txt"), "r+")
         timeAccumulator = 0
         lineCount = 0
