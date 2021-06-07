@@ -221,7 +221,6 @@ class PortalBoxApplication:
             self.training_mode = False
             logging.info("Intially updating local database")
             self.update_local_database()
-            self.testTimes()
             logging.info("Starting to wait for access card")
             self.wait_for_access_card()
         else:
@@ -234,6 +233,7 @@ class PortalBoxApplication:
         Wait for a card and if we read a card decide what to do
         '''
         logging.debug("Setting display to sleep")
+        self.testTimes()
         self.box.sleep_display()
         # Run... loop endlessly waiting for RFID cards
         logging.debug("Waiting for an access card")
