@@ -218,7 +218,7 @@ class PortalBoxApplication:
             self.training_mode = False
             logging.info("Intially updating local database")
             self.update_local_database()
-            self.testTimes()
+            # self.testTimes()
             logging.info("Starting to wait for access card")
             self.wait_for_access_card()
         else:
