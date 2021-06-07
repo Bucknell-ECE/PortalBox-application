@@ -28,7 +28,7 @@ import signal
 import sys
 import threading
 import pickle
-from time import sleep, time
+from time import sleep, time, time_ns
 from uuid import getnode as get_mac_address
 
 # our code
@@ -202,7 +202,7 @@ class PortalBoxApplication:
         logging.debug("Waiting for an access card")
         while self.running:
             os.system("echo wait_for_a_card > /tmp/boxactivity")
-            
+
             # Update the local DataBase from the server
             self.update_local_database()
 
@@ -304,14 +304,19 @@ class PortalBoxApplication:
 
         @return a boolean of whether or not the user is authorized for the equipment
         '''
-
+        start_time = time_ns()
         #Check if we should always check the remote database
         if(self.always_check_remote_database):
-            return self.db.is_user_authorized_for_equipment_type(uid, equipment_type_id)
+            x = self.db.is_user_authorized_for_equipment_type(uid, equipment_type_id)
+            logging.debug("Time to check from the the remote database is {}".format(time_ns()-start_time))
+            return x
+
         else:
             #Unpickle the local database and see if the equipment_type_id is in it
             user_auths = pickle.load(open(os.path.join(sys.path[0], LOCAL_DATABASE_FILE_PATH),"rb"))
-            return equipment_type_id in user_auths[uid][1]
+            x = equipment_type_id in user_auths[uid][1]
+            logging.debug("Time to check from the the local database is {}".format(time_ns()-start_time))
+            return x
 
     def update_local_database(self):
         '''
@@ -320,10 +325,12 @@ class PortalBoxApplication:
         and the value is a list consisting of
         (int)user_id,
         (list of ints)equipment_type's they are authorized to use
+        # TODO: Change this so it includes all the information that the box needs, like email
         '''
 
         logging.debug("Getting Database from the server")
-        user_info = self.db.get_user_auth();
+        start_time = time_ns();
+        user_info = self.db.get_user_auth(self.equipment_id(x));
 
         user_dict = {}
         for x in user_info:
@@ -337,7 +344,7 @@ class PortalBoxApplication:
 
         local_database_file = open(os.path.join(sys.path[0], LOCAL_DATABASE_FILE_PATH), "wb")
         pickle.dump(user_dict,local_database_file)
-
+        logging.debug("Time to pull and pickel from database is {}".format(time_ns()-start_time))
         logging.debug("Finished getting database from Server")
 
 

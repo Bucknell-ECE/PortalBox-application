@@ -492,7 +492,7 @@ class Database:
         return user
 
 
-    def get_user_auth(self):
+    def get_user_auth(self, type_id):
         '''
         Gets a list of users and the machine types they are authorized to use
 
@@ -513,10 +513,11 @@ class Database:
 
             query = ("SELECT c.card_id, c.user_id, a.equipment_type_id FROM users_x_cards AS c \
                       JOIN authorizations AS a \
-                        ON c.user_id = a.user_id")
+                        ON c.user_id = a.user_id \
+                      WHERE a.equipment_type_id = '%s'")
 
             cursor = connection.cursor()
-            cursor.execute(query)
+            cursor.execute(query, (type_id,))
 
             user_auths = cursor.fetchall()
             cursor.close()
