@@ -351,10 +351,12 @@ class PortalBoxApplication:
 
         else:
             #Unpickle the local database and see if the equipment_type_id is in it
-            user_auths = pickle.load(open(os.path.join(sys.path[0], LOCAL_DATABASE_FILE_PATH),"rb"))
-            x = equipment_type_id in user_auths[uid][1]
-            timeLog = open(os.path.join(sys.path[0], "checkFromLocalDBTimes.txt"), "a+")
-            timeLog.write("{} \n".format(time_ns()-start_time))
+            user_auths = pickle.load(open(os.path.join(sys.path[0], LOCAL_DATABASE_FILE_PATH),"rb")
+            x = False
+            if(uid in user_auths):
+                x = equipment_type_id in user_auths[uid][1]
+                timeLog = open(os.path.join(sys.path[0], "checkFromLocalDBTimes.txt"), "a+")
+                timeLog.write("{} \n".format(time_ns()-start_time))
             return x
 
     def update_local_database(self):
