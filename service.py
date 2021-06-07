@@ -107,8 +107,8 @@ class PortalBoxApplication:
 
         self.always_check_remote_database = False
         for x in range(1000):
-            sleep(.5)
-            self.is_user_authorized_for_equipment_type(3214141241232,3214141241232)
+            sleep(.1)
+            self.is_user_authorized_for_equipment_type("3214141241232","3214141241232")
         timeLog = open(os.path.join(sys.path[0], "checkFromLocalDBTimes.txt"), "r+")
         timeAccumulator = 0
         lineCount = 0
@@ -119,8 +119,8 @@ class PortalBoxApplication:
 
         self.always_check_remote_database = True
         for x in range(1000):
-            sleep(.5)
-            self.is_user_authorized_for_equipment_type(3214141241232,3214141241232)
+            sleep(.1)
+            self.is_user_authorized_for_equipment_type("3214141241232","3214141241232")
         timeLog = open(os.path.join(sys.path[0], "checkFromRemoteDBTimes.txt"), "r+")
         timeAccumulator = 0
         lineCount = 0
