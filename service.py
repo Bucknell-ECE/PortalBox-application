@@ -120,7 +120,6 @@ class PortalBoxApplication:
         try:
             logging.debug("Creating database instance")
             self.db = Database(self.settings['db'])
-            self.db.get_user_auth()
             logging.info("Connected to Database")
         except Exception as e:
             logging.error("{}".format(e))
@@ -308,14 +307,16 @@ class PortalBoxApplication:
         #Check if we should always check the remote database
         if(self.always_check_remote_database):
             x = self.db.is_user_authorized_for_equipment_type(uid, equipment_type_id)
-            logging.debug("Time to check from the the remote database is {}".format(time_ns()-start_time))
+            timeLog = open(os.path.join(sys.path[0], "checkFromRemoteDBTimes.txt"), "a+")
+            timeLog.write("{} \n".format(time_ns()-start_time))
             return x
 
         else:
             #Unpickle the local database and see if the equipment_type_id is in it
             user_auths = pickle.load(open(os.path.join(sys.path[0], LOCAL_DATABASE_FILE_PATH),"rb"))
             x = equipment_type_id in user_auths[uid][1]
-            logging.debug("Time to check from the the local database is {}".format(time_ns()-start_time))
+            timeLog = open(os.path.join(sys.path[0], "checkFromLocalDBTimes.txt"), "a+")
+            timeLog.write("{} \n".format(time_ns()-start_time))
             return x
 
     def update_local_database(self):
@@ -330,7 +331,7 @@ class PortalBoxApplication:
 
         logging.debug("Getting Database from the server")
         start_time = time_ns();
-        user_info = self.db.get_user_auth(self.equipment_id(x));
+        user_info = self.db.get_user_auth(self.equipment_type);
 
         user_dict = {}
         for x in user_info:
@@ -344,7 +345,9 @@ class PortalBoxApplication:
 
         local_database_file = open(os.path.join(sys.path[0], LOCAL_DATABASE_FILE_PATH), "wb")
         pickle.dump(user_dict,local_database_file)
-        logging.debug("Time to pull and pickel from database is {}".format(time_ns()-start_time))
+        timeLog = open(os.path.join(sys.path[0], "pullPickelTime.txt"), "a+")
+        timeLog.write("{} \n".format(time_ns()-start_time))
+
         logging.debug("Finished getting database from Server")
 
 
