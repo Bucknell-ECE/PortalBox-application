@@ -331,7 +331,7 @@ class PortalBoxApplication:
 
         logging.debug("Getting Database from the server")
         start_time = time_ns();
-        user_info = self.db.get_user_auth(self.equipment_type);
+        user_info = self.db.get_user_auth();
 
         user_dict = {}
         for x in user_info:
