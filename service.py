@@ -93,6 +93,7 @@ class PortalBoxApplication:
         self.box.cleanup()
 
     def testTimes(self):
+        logging.debug("Starting Testing")
         for x in range(10000):
             self.update_local_database()
         updatelocalDBTimes = open(os.path.join(sys.path[0], "pullPickelTime.txt"), "r+")
@@ -363,7 +364,7 @@ class PortalBoxApplication:
         # TODO: Change this so it includes all the information that the box needs, like email
         '''
 
-        logging.debug("Getting Database from the server")
+        # logging.debug("Getting Database from the server")
         start_time = time_ns();
         user_info = self.db.get_user_auth();
 
@@ -382,7 +383,7 @@ class PortalBoxApplication:
         timeLog = open(os.path.join(sys.path[0], "pullPickelTime.txt"), "a+")
         timeLog.write("{} \n".format(time_ns()-start_time))
 
-        logging.debug("Finished getting database from Server")
+        # logging.debug("Finished getting database from Server")
 
 
 
