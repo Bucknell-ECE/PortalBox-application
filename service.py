@@ -92,6 +92,39 @@ class PortalBoxApplication:
         '''
         self.box.cleanup()
 
+    def testTimes(self):
+        for x in range 10000:
+            self.update_local_database()
+        updatelocalDBTimes = open(os.path.join(sys.path[0], "pullPickelTime.txt"), "r+")
+        timeAccumulator = 0
+        lineCount = 0
+        for line in updatelocalDBTimes:
+            timeAccumulator += int(line.strip())
+            lineCount += 1
+        logging.debug("Average time to pull from remote and update local is {}".format(timeAccumulator/lineCount))
+
+        self.always_check_remote_database = False
+        for x in range 10000:
+            self.is_user_authorized_for_equipment_type(1,1)
+        timeLog = open(os.path.join(sys.path[0], "checkFromLocalDBTimes.txt"), "r+")
+        timeAccumulator = 0
+        lineCount = 0
+        for line in timeLog:
+            timeAccumulator += int(line.strip())
+            lineCount += 1
+        logging.debug("Average time to check from local is {}".format((timeAccumulator/lineCount)))
+
+        self.always_check_remote_database = True
+        for x in range 10000:
+            self.is_user_authorized_for_equipment_type(1,1)
+        timeLog = open(os.path.join(sys.path[0], "checkFromRemoteDBTimes.txt"), "r+")
+        timeAccumulator = 0
+        lineCount = 0
+        for line in timeLog:
+            timeAccumulator += int(line.strip())
+            lineCount += 1
+        logging.debug("Average time to check from remote is {}".format((timeAccumulator/lineCount)))
+
 
     def run(self):
         '''
@@ -102,7 +135,7 @@ class PortalBoxApplication:
         '''
 
 
-
+        self.testTimes()
 
         os.system("echo False > /tmp/running")
 
