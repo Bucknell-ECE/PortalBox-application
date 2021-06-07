@@ -514,7 +514,7 @@ class Database:
             query = ("SELECT c.card_id, c.user_id, a.equipment_type_id FROM users_x_cards AS c \
                       JOIN authorizations AS a \
                         ON c.user_id = a.user_id \
-                      WHERE a.equipment_type_id = '%s'")
+                      WHERE a.equipment_type_id = %s")
 
             cursor = connection.cursor()
             cursor.execute(query, (type_id,))
