@@ -77,7 +77,7 @@ class Database:
         Reestablish a connection to the database. Useful if the connection
         timed out
         '''
-        logging.debug("Attempting to reconnect to database")
+        #logging.debug("Attempting to reconnect to database")
 
         self._connection = self._connect()
 
@@ -88,7 +88,7 @@ class Database:
         '''
         Establish a connection to the database
         '''
-        logging.debug("Attempting to connect to database")
+        #logging.debug("Attempting to connect to database")
 
         return mysql.connector.connect(**self.connection_settings)
 
