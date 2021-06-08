@@ -102,7 +102,7 @@ class PortalBoxApplication:
             self.update_local_database()
             time_log.write("{},".format(time_ns()-start_time))
             if((x%25)==0):
-                logging.debug("finished " + x)
+                logging.debug("finished " + str(x))
         logging.debug("starting to test local database stuff")
         time_log.write("\nCheck Local Times\n")
         self.always_check_remote_database = False
@@ -111,7 +111,7 @@ class PortalBoxApplication:
             self.is_user_authorized_for_equipment_type("3214141241232","3214141241232")
             time_log.write("{},".format(time_ns()-start_time))
             if((x%25)==0):
-                logging.debug("finished " + x)
+                logging.debug("finished " + str(x))
         logging.debug("starting to test remote DB stuff")
         time_log.write("\nCheck Remote Times\n")
         self.always_check_remote_database = True
@@ -120,7 +120,7 @@ class PortalBoxApplication:
             self.is_user_authorized_for_equipment_type("3214141241232","3214141241232")
             time_log.write("{},".format(time_ns()-start_time))
             if((x%25)==0):
-                logging.debug("finished " + x)
+                logging.debug("finished " + str(x))
         time_log.close()
         logging.debug("done with times")
 
