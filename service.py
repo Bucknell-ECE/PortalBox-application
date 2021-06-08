@@ -30,8 +30,6 @@ import threading
 import pickle
 from time import sleep, time, time_ns
 from uuid import getnode as get_mac_address
-import matplotlib.pyplot as plt
-import numpy as np
 
 # our code
 from portalbox.PortalBox import PortalBox
