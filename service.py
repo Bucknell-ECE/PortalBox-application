@@ -115,7 +115,9 @@ class PortalBoxApplication:
             start_time = time_ns()
             self.is_user_authorized_for_equipment_type("3214141241232","3214141241232")
             time_log.write("{},".format(time_ns()-start_time))
+        time_log.close()
         logging.debug("done with times")
+
 
 
     def run(self):
