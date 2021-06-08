@@ -30,6 +30,8 @@ import threading
 import pickle
 from time import sleep, time, time_ns
 from uuid import getnode as get_mac_address
+import matplotlib.pyplot as plt
+import numpy as np
 
 # our code
 from portalbox.PortalBox import PortalBox
@@ -93,39 +95,29 @@ class PortalBoxApplication:
         self.box.cleanup()
 
     def testTimes(self):
-        # logging.debug("Starting Testing")
-        # for x in range(1000):
-        #     sleep(.5)
-        #     self.update_local_database()
-        updatelocalDBTimes = open(os.path.join(sys.path[0], "pullPickelTime.txt"), "r+")
-        timeAccumulator = 0
-        lineCount = 0
-        for line in updatelocalDBTimes:
-            timeAccumulator += int(line.strip())
-            lineCount += 1
-        logging.debug("Average time to pull from remote and update local is {}".format(timeAccumulator/lineCount))
+        logging.debug("Starting Testing")
+
+        time_log = open(os.path.join(sys.path[0], "time_log.txt"), "w")
+        time_log.write("Pull Pickel Times \n")
+        for x in range(500):
+            start_time = time_ns()
+            self.update_local_database()
+            timeLog.write("{},".format(time_ns()-start_time))
         logging.debug("starting to test local database stuff")
+        time_log.write("\nCheck Local Times\n")
         self.always_check_remote_database = False
-        for x in range(1000):
+        for x in range(500):
+            start_time = time_ns()
             self.is_user_authorized_for_equipment_type("3214141241232","3214141241232")
-        timeLog = open(os.path.join(sys.path[0], "checkFromLocalDBTimes.txt"), "r+")
-        timeAccumulator = 0
-        lineCount = 0
-        for line in timeLog:
-            timeAccumulator += int(line.strip())
-            lineCount += 1
-        logging.debug("Average time to check from local is {}".format((timeAccumulator/lineCount)))
+            timeLog.write("{},".format(time_ns()-start_time))
         logging.debug("starting to test remote DB stuff")
+        time_log.write("\nCheck Remote Times\n")
         self.always_check_remote_database = True
-        for x in range(1000):
+        for x in range(500):
+            start_time = time_ns()
             self.is_user_authorized_for_equipment_type("3214141241232","3214141241232")
-        timeLog = open(os.path.join(sys.path[0], "checkFromRemoteDBTimes.txt"), "r+")
-        timeAccumulator = 0
-        lineCount = 0
-        for line in timeLog:
-            timeAccumulator += int(line.strip())
-            lineCount += 1
-        logging.debug("Average time to check from remote is {}".format((timeAccumulator/lineCount)))
+            timeLog.write("{},".format(time_ns()-start_time))
+        logging.debug("done with times")
 
 
     def run(self):
@@ -339,22 +331,17 @@ class PortalBoxApplication:
 
         @return a boolean of whether or not the user is authorized for the equipment
         '''
-        start_time = time_ns()
         #Check if we should always check the remote database
         if(self.always_check_remote_database):
             x = self.db.is_user_authorized_for_equipment_type(uid, equipment_type_id)
-            timeLog = open(os.path.join(sys.path[0], "checkFromRemoteDBTimes.txt"), "a+")
-            timeLog.write("{} \n".format(time_ns()-start_time))
             return x
 
         else:
             #Unpickle the local database and see if the equipment_type_id is in it
             user_auths = pickle.load(open(os.path.join(sys.path[0], LOCAL_DATABASE_FILE_PATH),"rb"))
             if(uid in user_auths.keys()):
-                x = equipment_type_id in user_auths[uid][1]
-                timeLog = open(os.path.join(sys.path[0], "checkFromLocalDBTimes.txt"), "a+")
-                timeLog.write("{} \n".format(time_ns()-start_time))
-                return x
+                is_user_auth = equipment_type_id in user_auths[uid][1]
+                return is_user_auth
             else:
                 return False
 
@@ -369,7 +356,6 @@ class PortalBoxApplication:
         '''
 
         # logging.debug("Getting Database from the server")
-        start_time = time_ns();
         user_info = self.db.get_user_auth();
 
         user_dict = {}
@@ -384,8 +370,7 @@ class PortalBoxApplication:
 
         local_database_file = open(os.path.join(sys.path[0], LOCAL_DATABASE_FILE_PATH), "wb")
         pickle.dump(user_dict,local_database_file)
-        timeLog = open(os.path.join(sys.path[0], "pullPickelTime.txt"), "a+")
-        timeLog.write("{} \n".format(time_ns()-start_time))
+
 
         # logging.debug("Finished getting database from Server")
 
