@@ -83,8 +83,9 @@ class Setup(State):
 
     def on_enter(self, input_data):
         #Do everything related to setup, if anything fails and returns an exception, then go to Shutdown
+        logging.info("Starting setup")
         try:
-            self.service.box.wipe_display(self.service.settings["setup_color"])
+            self.service.box.set_display_color_wipe(self.service.settings["setup_color"])
             self.service.connect_to_database()
             self.service.connect_to_email()
             self.service.get_equipment_role()
