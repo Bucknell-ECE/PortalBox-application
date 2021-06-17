@@ -51,7 +51,7 @@ input_data = {
 }
 
 
-class PortalBoxApplication:
+class PortalBoxApplication():
     """
     wrap code as a class to allow for clean sharing of objects
     between states
@@ -67,11 +67,11 @@ class PortalBoxApplication:
         self.settings = settings
         self.running = False
 
-    def __del__(self):
-        """
-        free resources after run
-        """
-        self.box.cleanup()
+    # def __del__(self):
+    #     """
+    #     free resources after run
+    #     """
+    #     self.box.cleanup()
 
     def connect_to_database(self):
         # connect to backend database
