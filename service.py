@@ -45,7 +45,6 @@ DEFAULT_CONFIG_FILE_PATH = "config.ini"
 input_data = {
     "card_id": 0,
     "user_is_authorized": False,
-    "user_authority": 0,
     "card_type": "none",
     "button_pressed": False,
 }
@@ -132,24 +131,24 @@ class PortalBoxApplication():
         if(new_card_id <= 0):
             new_card_id = self.box.read_RFID_card()
         if(new_card_id > 0 and new_card_id != old_input_data["card_id"]):
-            new_inputs = {
+            new_input_data = {
                 "card_id": new_card_id,
                 "user_is_authorized": self.get_user_auths(new_card_id),
-                "user_authority": 0,
                 "card_type": self.db.get_card_type(new_card_id),
                 "button_pressed": self.box.has_button_been_pressed()
             }
         elif(new_card_id <= 0):
-            new_inputs = {
+            new_input_data = {
                 "card_id": -1,
                 "user_is_authorized": False,
-                "user_authority": 0,
                 "card_type": CardType.INVALID_CARD,
                 "button_pressed": self.box.has_button_been_pressed()
             }
+        else:
+            new_input_data = old_input_data
 
 
-        return new_inputs
+        return new_input_data
 
     def get_user_auths(self, card_id):
         '''
