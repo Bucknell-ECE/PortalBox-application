@@ -128,7 +128,8 @@ class PortalBoxApplication:
         '''
 
         #Check if we should always check the remote database
-        if(True):## TODO: have this actually check for the local database
+        ## TODO: have this actually check for the local database
+        if(True):
             return self.db.is_user_authorized_for_equipment_type(uid, self.equipment_type_id)
         else:
             #Unpickle the local database and see if the equipment_type_id is in it
