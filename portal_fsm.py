@@ -72,7 +72,7 @@ class State(object):
       Determines whether or not the grace period has expired
       @return a boolean which is True when the grace period has expired
       """
-      if((datetime.now() - self.timeout_start) > self.grace_delta):
+      if((datetime.now() - self.grace_start) > self.grace_delta):
         return True
       else:
         return False
