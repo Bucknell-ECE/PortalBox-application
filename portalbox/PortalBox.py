@@ -92,8 +92,8 @@ class PortalBox:
 
         # Get buzzer enabled from settings
         self.buzzer_enabled = True
-        if "buzzer_enabled" in settings["cosmetics"]:
-            if settings["cosmetics"]["buzzer_enabled"].lower() in ("no", "false", "0"):
+        if "buzzer_enabled" in settings["display"]:
+            if settings["display"]["buzzer_enabled"].lower() in ("no", "false", "0"):
                 self.buzzer_enabled = False
 
         # Create a proxy for the RFID card reader

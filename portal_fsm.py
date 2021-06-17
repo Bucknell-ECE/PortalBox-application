@@ -7,7 +7,7 @@ Inspired by @cmcginty's answer at
 https://stackoverflow.com/questions/2101961/python-state-machine-design
 """
 # from standard library
-import datetime
+from datetime import datetime, timedelta
 import logging
 
 # our code
@@ -34,8 +34,8 @@ class State(object):
         self.service = portal_box_service
         self.timeout_start = datetime.now()
         self.grace_start = datetime.now()
-        self.timeout_delta = datetime.timeDelta(0)
-        self.grace_delta = datetime.timeDelta(2)
+        self.timeout_delta = timedelta(0)
+        self.grace_delta = timedelta(seconds = 2)
         self.on_enter()
 
     # Transition the FSM to another state, and invoke the on_enter()
@@ -84,12 +84,12 @@ class Setup(State):
     def on_enter(self, input_data):
         #Do everything related to setup, if anything fails and returns an exception, then go to Shutdown
         try:
-            self.service.box.wipe_display(self.service.settings["setup color"])
+            self.service.box.wipe_display(self.service.settings["setup_color"])
             self.service.connect_to_database()
             self.service.connect_to_email()
             self.service.get_equipment_role()
             self.timeout_delta = datetime.timeDelta(minutes = self.service.timeout_minutes)
-            self.grace_delta = datetime.timeDelta(seconds = self.service.settings["grace period"])
+            self.grace_delta = datetime.timeDelta(seconds = self.service.settings["grace_period"])
         except Exception as e:
             logging.error("{}".format(e))
             self.next_state(Shutdown)
