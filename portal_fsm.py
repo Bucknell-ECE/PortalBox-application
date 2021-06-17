@@ -154,7 +154,7 @@ class RunningAuthUser(State):
         self.service.box.set_equipment_power_on(True)
         self.service.box.set_display(self.service.settings["display"]["auth_color"])
         self.auth_user_id = input_data["card_id"]
-        self.service.db.log_access_attempt(input_data["card_id"], self.equipment_id, True)
+        self.service.db.log_access_attempt(input_data["card_id"], self.service.equipment_id, True)
 
 
 class IdleUnauthCard(State):
@@ -165,7 +165,7 @@ class IdleUnauthCard(State):
 
     def on_enter(self, input_data):
         self.service.box.flash_display(self.service.settings["display"]["unauth_color"])
-        self.service.db.log_access_attempt(input_data["card_id"], self.equipment_id, False)
+        self.service.db.log_access_attempt(input_data["card_id"], self.service.equipment_id, False)
 
 class RunningNoCard(State):
 
