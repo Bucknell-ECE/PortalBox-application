@@ -122,11 +122,10 @@ class PortalBoxApplication:
         return new_inputs
 
     def get_user_auths(self, card_id):
-                '''
+        '''
         Determines whether or not the user is authorized for the equipment type
         @return a boolean of whether or not the user is authorized for the equipment
         '''
-
         #Check if we should always check the remote database
         ## TODO: have this actually check for the local database
         if(True):
