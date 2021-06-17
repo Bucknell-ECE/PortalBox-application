@@ -187,7 +187,7 @@ class RunningNoCard(State):
                 self.next_state(IdleUnknownCard, input_data)
 
         elif(
-                self.grace_expired or
+                self.grace_expired() or
                 input_data["button_pressed"]
             ):
             self.next_state(IdleNoCard, input_data)
@@ -202,7 +202,7 @@ class RunningTimeout(State):
         if(input_data["card_id"] <= 0):
             self.next_state(IdleNoCard, input_data)
 
-        if(self.grace_expired()):
+        if(self.timeout_expired()):
             self.next_state(IdleAuthCard, input_data)
 
         if(input_data["button_pressed"]):
