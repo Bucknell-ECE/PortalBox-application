@@ -58,7 +58,7 @@ class PortalBox:
     '''
     Wrapper to manage peripherals
     '''
-    def __init__(self):
+    def __init__(self, settings):
         #detect raspberry pi version
         self.is_pi_zero_w = REVISION_ID_RASPBERRY_PI_0_W == get_revision()
 
@@ -85,10 +85,16 @@ class PortalBox:
         if self.is_pi_zero_w:
             logging.debug("Creating display controller")
             from .display.R2NeoPixelController import R2NeoPixelController
-            self.display_controller = R2NeoPixelController()
+            self.display_controller = R2NeoPixelController(settings)
         else:
             logging.info("Did not connect to display driver, display methods will be unavailable")
             self.display_controller = None
+
+        # Get buzzer enabled from settings
+        self.buzzer_enabled = True
+        if "buzzer_enabled" in settings["cosmetics"]:
+            if settings["cosmetics"]["buzzer_enabled"].lower() in ("no", "false", "0"):
+                self.buzzer_enabled = False
 
         # Create a proxy for the RFID card reader
         logging.debug("Creating RFID reader")
@@ -127,7 +133,10 @@ class PortalBox:
         :param state: True -> Buzzer On; False -> Buzzer Off
         :return: None
         '''
-        GPIO.output(GPIO_BUZZER_PIN, state)
+        if(self.buzzer_enabled):
+            GPIO.output(GPIO_BUZZER_PIN, state)
+        else:
+            return
 
 
     def get_button_state(self):
@@ -178,7 +187,7 @@ class PortalBox:
                 self.outlist[reg] = regval
 
        # If the RFID module hangs then we need to restart the portal-box
-       # service. This is an infinite loop...the watchdog timer should 
+       # service. This is an infinite loop...the watchdog timer should
        # detect this and restart the service. Meanwhile, we beep and an
        # flash a red and yellow display
         while rfid_hang:
@@ -215,6 +224,15 @@ class PortalBox:
         else:
             logging.info("PortalBox wake_display failed")
 
+    def pulse_display(self, color = BLACK):
+        '''
+        Pulses the display with the specified color
+        @param (bytes len 3) color - the color to set. Defaults to LED's off
+        '''
+        if self.display_controller:
+            self.display_controller.pulse_display(color)
+        else:
+            logging.info("PortalBox pulse_display_color failed")
 
     def sleep_display(self):
         '''
@@ -226,6 +244,8 @@ class PortalBox:
             self.display_controller.sleep_display()
         else:
             logging.info("PortalBox sleep_display failed")
+
+
 
 
     def set_display_color(self, color = BLACK):
