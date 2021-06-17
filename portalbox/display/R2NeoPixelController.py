@@ -85,6 +85,13 @@ class R2NeoPixelController(AbstractController):
         self._transmit(command)
         return self._receive()
 
+    def pulse_display(self, color):
+        '''
+        Pulses the display the specified color
+        '''
+        command = "pulse {} {} {}\n".format(color[0], color[1], color[2])
+        self._transmit(command)
+        return self._receive()
 
     def wake_display(self):
         '''
