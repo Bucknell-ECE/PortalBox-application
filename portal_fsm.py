@@ -84,7 +84,7 @@ class Setup(State):
     def on_enter(self, input_data):
         #Do everything related to setup, if anything fails and returns an exception, then go to Shutdown
         logging.info("Starting setup")
-        self.service.box.set_display_color(bytes.fromhex(self.service.settings["display"]["setup_color"]))
+        self.service.box.set_display_color(self.service.settings["display"]["setup_color"])
         try:
             self.service.connect_to_database()
             self.service.connect_to_email()
