@@ -129,6 +129,8 @@ class PortalBoxApplication():
 
     def get_inputs(self):
         new_card_id = self.box.read_RFID_card()
+        if(new_card_id <= 0):
+            new_card_id = self.box.read_RFID_card()
         if(new_card_id > 0):
             new_inputs = {
                 "card_id": new_card_id,

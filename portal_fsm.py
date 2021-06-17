@@ -192,7 +192,7 @@ class RunningNoCard(State):
 
     def on_enter(self, input_data):
         self.grace_start = datetime.now()
-        self.service.box.set_display_color("no_card_grace_color")
+        self.service.box.set_display_color(self.service.settings["display"]["no_card_grace_color"])
 
 class RunningTimeout(State):
 
