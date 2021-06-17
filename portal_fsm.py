@@ -6,9 +6,12 @@ The finite state machine for the portal box service.
 Inspired by @cmcginty's answer at
 https://stackoverflow.com/questions/2101961/python-state-machine-design
 """
+# from standard library
 import datetime
 import logging
 
+# our code
+from CardType import CardType
 
 class State(object):
     """The parent state for all FSM states."""
@@ -122,7 +125,7 @@ class AccessComplete(State):
 class IdleUnknownCard(State):
 
     def __call__(self, input_data):
-        if(input_data["card_type"] == "SHUTDOWN"):
+        if(input_data["card_type"] == CardType.SHUTDOWN_CARD):
             self.next_state(Shutdown)
 
         elif(input_data["user_is_authorized"]):
@@ -167,10 +170,13 @@ class RunningNoCard(State):
 
     def __call__(self, input_data):
         if(input_data["card_id"] > 0):
-            if(input_data["card_type"] == "proxy"):
+            if(input_data["card_type"] == CardType.PROXY_CARD):
                 self.next_state(RunningProxyCard)
-            elif(input_data["card_type"] == "training"):
+            elif(input_data["card_type"] == CardType.TRAINING_CARD):
                 self.next_state(RunningTrainingCard)
+            elif(input_data["card_type"] == CardType.USER_CARD):
+                if(input_data["card_id"] == self.auth_user_id):
+                    self.next_state(RunningAuthUser)
             else:
                 self.next_state(IdleUnknownCard)
 
@@ -194,10 +200,13 @@ class RunningTimeout(State):
             self.next_state(IdleAuthCard)
 
         if(input_data["button_pressed"]):
-            if(input_data["card_type"] == "proxy"):
+            if(input_data["card_type"] == CardType.PROXY_CARD):
                 self.next_state(RunningProxyCard)
-            elif(input_data["card_type"] == "training"):
+            elif(input_data["card_type"] == CardType.TRAINING_CARD):
                 self.next_state(RunningTrainingCard)
+            elif(input_data["card_type"] == CardType.USER_CARD):
+                if(input_data["card_id"] == self.auth_user_id):
+                    self.next_state(RunningAuthUser)
             else:
                 self.next_state(IdleUnknownCard)
 

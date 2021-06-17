@@ -13,16 +13,13 @@ import logging
 # third party libraries
 import mysql.connector
 
+# our code
+from CardType import CardType
+
 class Database:
     '''
     A high level interface to the backend database
     '''
-    # Access card types
-    INVALID_CARD = -1
-    SHUTDOWN_CARD = 1
-    PROXY_CARD = 2
-    TRAINING_CARD = 3
-    USER_CARD = 4
 
     def __init__(self, settings):
         '''
@@ -399,8 +396,9 @@ class Database:
         '''
         Get the type of the card identified by id
 
-        @return an integer: -1 for card not found, 1 for shutdown card, 2 for
-            proxy card, 3 for training card, and 4 for user card 
+        @returns a CardType enum:
+            with -1 for card not found, 1 for shutdown card,
+            2 for proxy card, 3 for training card, and 4 for user card
         '''
         type_id = -1
         connection = self._connection
@@ -425,7 +423,7 @@ class Database:
         except mysql.connector.Error as err:
             logging.error("{}".format(err))
 
-        return type_id
+        return CardType(type_id)
 
 
     def is_training_card_for_equipment_type(self, id, type_id):

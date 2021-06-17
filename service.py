@@ -37,6 +37,7 @@ import portal_fsm as fsm
 from portalbox.PortalBox import PortalBox
 from Database import Database
 from Emailer import Emailer
+from CardType import CardType
 
 # Definitions aka constants
 DEFAULT_CONFIG_FILE_PATH = "config.ini"
@@ -115,18 +116,24 @@ class PortalBoxApplication:
             "card_id": new_card_id,
             "user_is_authorized": self.get_user_auths(new_card_id),
             "user_authority": 0,
-            "card_type": self.get_card_type(new_card_id),
+            "card_type": self.db.get_card_type(new_card_id),
             "button_pressed": self.box.has_button_been_pressed()
         }
         return new_inputs
 
-    self.get_user_auths(self, card_id):
+    def get_user_auths(self, card_id):
+                '''
+        Determines whether or not the user is authorized for the equipment type
+        @return a boolean of whether or not the user is authorized for the equipment
+        '''
 
-
-
-    def get_card_type(self):
-
-
+        #Check if we should always check the remote database
+        if(True):## TODO: have this actually check for the local database
+            return self.db.is_user_authorized_for_equipment_type(uid, self.equipment_type_id)
+        else:
+            #Unpickle the local database and see if the equipment_type_id is in it
+            user_auths = pickle.load(open(os.path.join(sys.path[0], LOCAL_DATABASE_FILE_PATH),"rb"))
+            return equipment_type_id in user_auths[uid][1]
 
     def send_user_email(self, auth_id):
             logging.debug("Getting user email ID from DB")
