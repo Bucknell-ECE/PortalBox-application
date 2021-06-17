@@ -89,8 +89,8 @@ class Setup(State):
             self.service.connect_to_database()
             self.service.connect_to_email()
             self.service.get_equipment_role()
-            self.timeout_delta = datetime.timeDelta(minutes = self.service.timeout_minutes)
-            self.grace_delta = datetime.timeDelta(seconds = self.service.settings["user_exp"]["grace_period"])
+            self.timeout_delta = timedelta(minutes = self.service.timeout_minutes)
+            self.grace_delta = timedelta(seconds = self.service.settings["user_exp"]["grace_period"])
         except Exception as e:
             logging.error("Unable to complete setup exception raised \n\t{}".format(e))
             self.next_state(Shutdown, input_data)
