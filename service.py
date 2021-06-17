@@ -63,7 +63,7 @@ class PortalBoxApplication():
         so signal handlers can be configured in __main__
         """
         self.equipment_id = -1
-        self.box = PortalBox()
+        self.box = PortalBox(settings)
         self.settings = settings
         self.running = False
 
