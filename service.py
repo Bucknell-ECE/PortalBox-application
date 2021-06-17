@@ -76,8 +76,13 @@ class PortalBoxApplication():
     def connect_to_database(self):
         # connect to backend database
         logging.info("Attempting to connect to database")
-        self.db = Database(self.settings["db"])
+        try:
+            self.db = Database(self.settings["db"])
 
+        except Exception as e:
+            logging.error("Unable to connect to database exeception raised \n\t {}".format(e))
+            raise e
+        logging.info("Successfully connected to database")
     def connect_to_email(self):
         # be prepared to send emails
         logging.info("Attempting to connect to email")
