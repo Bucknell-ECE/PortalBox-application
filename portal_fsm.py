@@ -40,10 +40,10 @@ class State(object):
 
     # Transition the FSM to another state, and invoke the on_enter()
     # method for the new state.
-    def next_state(self, cls):
+    def next_state(self, cls, input_data):
         logging.debug("State transtition : {0} -> {1}".format(self.__class__.__name__,cls.__name__))
         self.__class__ = cls
-        self.on_enter()
+        self.on_enter(input_data)
 
 
     def on_enter(self, input_data):
@@ -79,7 +79,7 @@ class State(object):
 
 class Setup(State):
     def __call__(self, input_data):
-        self.next_state(IdleNoCard)
+        self.next_state(IdleNoCard, input_data)
 
     def on_enter(self, input_data):
         #Do everything related to setup, if anything fails and returns an exception, then go to Shutdown
@@ -92,7 +92,7 @@ class Setup(State):
             self.grace_delta = datetime.timeDelta(seconds = self.service.settings["grace_period"])
         except Exception as e:
             logging.error("{}".format(e))
-            self.next_state(Shutdown)
+            self.next_state(Shutdown, input_data)
 
 
 
@@ -109,14 +109,14 @@ class IdleNoCard(State):
 
     def __call__(self, input_data):
         if(input_data["card_id"] > 0):
-            self.next_state(IdleUnknownCard)
+            self.next_state(IdleUnknownCard, input_data)
 
     def on_enter(self, input_data):
         self.service.box.pulse_display(self.service.settings["sleep_color"])
 
 class AccessComplete(State):
     def __call__(self, input_data):
-        self.next_state(IdleNoCard)
+        self.next_state(IdleNoCard, input_data)
 
     def on_enter(self, input_data):
         self.service.db.log_access_completion(input_data["card_id"], self.service.equipment_id)
@@ -126,13 +126,13 @@ class IdleUnknownCard(State):
 
     def __call__(self, input_data):
         if(input_data["card_type"] == CardType.SHUTDOWN_CARD):
-            self.next_state(Shutdown)
+            self.next_state(Shutdown, input_data)
 
         elif(input_data["user_is_authorized"]):
-            self.next_state(RunningAuthUser)
+            self.next_state(RunningAuthUser, input_data)
 
         else:
-            self.next_state(IdleUnauthCard)
+            self.next_state(IdleUnauthCard, input_data)
 
 
     def on_enter(self, input_data):
@@ -142,9 +142,9 @@ class RunningAuthUser(State):
 
     def __call__(self, input_data):
         if(input_data["card_id"] <= 0):
-            self.next_state(RunningNoCard)
+            self.next_state(RunningNoCard, input_data)
         if(self.timeout_expired()):
-            self.next_state(RunningTimeout)
+            self.next_state(RunningTimeout, input_data)
 
     def on_enter(self, input_data):
         self.timeout_start = datetime.now()
@@ -160,7 +160,7 @@ class IdleUnauthCard(State):
 
     def __call__(self, input_data):
         if(input_data["card_id"] <= 0):
-            self.next_state(IdleNoCard)
+            self.next_state(IdleNoCard, input_data)
 
     def on_enter(self, input_data):
         self.service.box.flash_display(self.service.settings["unauth_color"])
@@ -171,20 +171,20 @@ class RunningNoCard(State):
     def __call__(self, input_data):
         if(input_data["card_id"] > 0):
             if(input_data["card_type"] == CardType.PROXY_CARD):
-                self.next_state(RunningProxyCard)
+                self.next_state(RunningProxyCard, input_data)
             elif(input_data["card_type"] == CardType.TRAINING_CARD):
-                self.next_state(RunningTrainingCard)
+                self.next_state(RunningTrainingCard, input_data)
             elif(input_data["card_type"] == CardType.USER_CARD):
                 if(input_data["card_id"] == self.auth_user_id):
-                    self.next_state(RunningAuthUser)
+                    self.next_state(RunningAuthUser, input_data)
             else:
-                self.next_state(IdleUnknownCard)
+                self.next_state(IdleUnknownCard, input_data)
 
         elif(
                 self.grace_expired or
                 input_data["button_pressed"]
             ):
-            self.next_state(IdleNoCard)
+            self.next_state(IdleNoCard, input_data)
 
     def on_enter(self, input_data):
         self.grace_start = datetime.now()
@@ -194,21 +194,21 @@ class RunningTimeout(State):
 
     def __call__(self, input_data):
         if(input_data["card_id"] <= 0):
-            self.next_state(IdleNoCard)
+            self.next_state(IdleNoCard, input_data)
 
         if(self.grace_expired()):
-            self.next_state(IdleAuthCard)
+            self.next_state(IdleAuthCard, input_data)
 
         if(input_data["button_pressed"]):
             if(input_data["card_type"] == CardType.PROXY_CARD):
-                self.next_state(RunningProxyCard)
+                self.next_state(RunningProxyCard, input_data)
             elif(input_data["card_type"] == CardType.TRAINING_CARD):
-                self.next_state(RunningTrainingCard)
+                self.next_state(RunningTrainingCard, input_data)
             elif(input_data["card_type"] == CardType.USER_CARD):
                 if(input_data["card_id"] == self.auth_user_id):
-                    self.next_state(RunningAuthUser)
+                    self.next_state(RunningAuthUser, input_data)
             else:
-                self.next_state(IdleUnknownCard)
+                self.next_state(IdleUnknownCard, input_data)
 
     def on_enter(self, input_data):
         self.grace_start = datetime.now()
@@ -218,7 +218,7 @@ class IdleAuthCard(State):
 
     def __call__(self, input_data):
         if(input_data["card_id"] <= 0):
-            self.next_state(IdleNoCard)
+            self.next_state(IdleNoCard, input_data)
 
     def on_enter(self, input_data):
         self.service.box.set_equipment_power_on(False)
@@ -229,9 +229,9 @@ class RunningProxyCard(State):
 
     def __call__(self, input_data):
         if(input_data["card_id"] <= 0):
-            self.next_state(RunningNoCard)
+            self.next_state(RunningNoCard, input_data)
         if(self.timeout_expired()):
-            self.next_state(RunningTimeout)
+            self.next_state(RunningTimeout, input_data)
 
     def on_enter(self, input_data):
         self.training_id = 0
@@ -244,9 +244,9 @@ class RunningTrainingCard(State):
 
     def __call__(self, input_data):
         if(input_data["card_id"] <= 0):
-            self.next_state(RunningNoCard)
+            self.next_state(RunningNoCard, input_data)
         if(self.timeout_expired()):
-            self.next_state(RunningTimeout)
+            self.next_state(RunningTimeout, input_data)
 
     def on_enter(self, input_data):
         self.proxy_id = 0
