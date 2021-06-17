@@ -176,6 +176,7 @@ class PortalBoxApplication():
         ''' Stop the service from a signal'''
         logging.debug("Interrupted")
         os.system("echo service_interrupt > /tmp/boxactivity")
+        self.shutdown()
 
 
 
