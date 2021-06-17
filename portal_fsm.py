@@ -84,7 +84,7 @@ class Setup(State):
     def on_enter(self, input_data):
         #Do everything related to setup, if anything fails and returns an exception, then go to Shutdown
         logging.info("Starting setup")
-        self.service.box.set_display_color_wipe(self.service.settings["display"]["setup_color"])
+        self.service.box.set_display_color(self.service.settings["display"]["setup_color"])
         try:
             self.service.connect_to_database()
             self.service.connect_to_email()
@@ -152,7 +152,7 @@ class RunningAuthUser(State):
         self.proxy_id = 0
         self.training_id = 0
         self.service.box.set_equipment_power_on(True)
-        self.service.box.set_display(self.service.settings["display"]["auth_color"])
+        self.service.box.set_display_color(self.service.settings["display"]["auth_color"])
         self.auth_user_id = input_data["card_id"]
         self.service.db.log_access_attempt(input_data["card_id"], self.service.equipment_id, True)
 
@@ -224,7 +224,7 @@ class IdleAuthCard(State):
     def on_enter(self, input_data):
         self.service.box.set_equipment_power_on(False)
         self.service.send_user_email(input_data["card_id"])
-        self.service.box.set_display(self.service.settings["display"]["timeout_color"])
+        self.service.box.set_display_color(self.service.settings["display"]["timeout_color"])
 
 class RunningProxyCard(State):
 
@@ -237,7 +237,7 @@ class RunningProxyCard(State):
     def on_enter(self, input_data):
         self.training_id = 0
         self.service.box.set_equipment_power_on(True)
-        self.service.box.set_display(self.service.settings["display"]["proxy_color"])
+        self.service.box.set_display_color(self.service.settings["display"]["proxy_color"])
         self.proxy_id = input_data["card_id"]
         self.service.db.log_access_attempt(input_data["card_id"], self.equipment_id, True)
 
@@ -252,6 +252,6 @@ class RunningTrainingCard(State):
     def on_enter(self, input_data):
         self.proxy_id = 0
         self.service.box.set_equipment_power_on(True)
-        self.service.box.set_display(self.service.settings["display"]["training_color"])
+        self.service.box.set_display_color(self.service.settings["display"]["training_color"])
         self.training_id = input_data["card_id"]
         self.service.db.log_access_attempt(input_data["card_id"], self.equipment_id, True)
