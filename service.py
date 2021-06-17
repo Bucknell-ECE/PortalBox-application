@@ -76,22 +76,31 @@ class PortalBoxApplication():
     def connect_to_database(self):
         # connect to backend database
         logging.info("Attempting to connect to database")
+
         try:
             self.db = Database(self.settings["db"])
-
         except Exception as e:
             logging.error("Unable to connect to database exeception raised \n\t {}".format(e))
             raise e
+
         logging.info("Successfully connected to database")
+
     def connect_to_email(self):
         # be prepared to send emails
         logging.info("Attempting to connect to email")
-        self.emailer = Emailer(self.settings["email"])
+        try:
+            self.emailer = Emailer(self.settings["email"])
+        except Exception as e:
+            logging.error("Unable to connect to email exeception raised \n\t {}".format(e))
+            raise e
+        logging.info("Successfully connected to email")
+
 
 
     def get_equipment_role(self):
         # Step 2 Figure out our identity
         mac_address = format(get_mac_address(), "x")
+        logging.info("Successfully got mac address")
 
         # determine what we are
         profile = (-1,)
@@ -113,7 +122,7 @@ class PortalBoxApplication():
         logging.info("Discovered identity. Type: %s(%s) Timeout: %s m",
             self.equipment_type,
             self.equipment_type_id,
-            self.timeout_period)
+            self.timeout_minutes)
         self.db.log_started_status(self.equipment_id)
 
 
