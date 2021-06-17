@@ -75,10 +75,12 @@ class PortalBoxApplication():
 
     def connect_to_database(self):
         # connect to backend database
+        logging.info("Attempting to connect to database")
         self.db = Database(self.settings["db"])
 
     def connect_to_email(self):
         # be prepared to send emails
+        logging.info("Attempting to connect to email")
         self.emailer = Emailer(self.settings["email"])
 
 
@@ -187,6 +189,21 @@ if __name__ == "__main__":
     # Create Badge Box Service
     service = PortalBoxApplication(settings)
 
+    # Setup logging
+    if settings.has_option('logging', 'level'):
+        if 'critical' == settings['logging']['level']:
+            logging.basicConfig(level=logging.CRITICAL)
+        elif 'error' == settings['logging']['level']:
+            logging.basicConfig(level=logging.ERROR)
+        elif 'warning' == settings['logging']['level']:
+            logging.basicConfig(level=logging.WARNING)
+        elif 'info' == settings['logging']['level']:
+            logging.basicConfig(level=logging.INFO)
+        elif 'debug' == settings['logging']['level']:
+            logging.basicConfig(level=logging.DEBUG)
+        else:
+            logging.basicConfig(level=logging.ERROR)
+            
     # Add signal handler so systemd can shutdown service
     signal.signal(signal.SIGINT, service.handle_interupt)
     signal.signal(signal.SIGTERM, service.handle_interupt)
