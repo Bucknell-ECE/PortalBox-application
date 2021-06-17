@@ -92,7 +92,7 @@ class Setup(State):
             self.timeout_delta = datetime.timeDelta(minutes = self.service.timeout_minutes)
             self.grace_delta = datetime.timeDelta(seconds = self.service.settings["user_exp"]["grace_period"])
         except Exception as e:
-            logging.error("{}".format(e))
+            logging.error("Unable to complete setup exception raised \n\t{}".format(e))
             self.next_state(Shutdown, input_data)
 
 
