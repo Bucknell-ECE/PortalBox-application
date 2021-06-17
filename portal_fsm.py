@@ -30,13 +30,13 @@ class State(object):
     #   removed and for the equipment timeout limit
     # Create datetime objects for the beginning of a grace period or
     #   timeout, their value is not important.
-    def __init__(self, portal_box_service):
+    def __init__(self, portal_box_service, input_data):
         self.service = portal_box_service
         self.timeout_start = datetime.now()
         self.grace_start = datetime.now()
         self.timeout_delta = timedelta(0)
         self.grace_delta = timedelta(seconds = 2)
-        self.on_enter()
+        self.on_enter(input_data)
 
     # Transition the FSM to another state, and invoke the on_enter()
     # method for the new state.

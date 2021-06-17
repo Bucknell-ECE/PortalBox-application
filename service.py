@@ -192,7 +192,7 @@ if __name__ == "__main__":
     signal.signal(signal.SIGTERM, service.handle_interupt)
 
     # Create finite state machine
-    fsm = fsm.Setup(service)
+    fsm = fsm.Setup(service, input_data)
 
     # Run service
     while True:
