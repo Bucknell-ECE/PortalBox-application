@@ -19,6 +19,7 @@
 import os
 import logging
 from time import sleep
+import threading
 
 # Our libraries
 from .MFRC522 import MFRC522 # this is a modified version of https://github.com/mxgxw/MFRC522-python
@@ -275,11 +276,11 @@ class PortalBox:
             logging.info("PortalBox color_wipe failed")
 
 
-    def flash_display(self, color, duration=1000, flashes=5, end_color = BLACK):
+    def flash_display(self, color, duration=2, flashes=5, end_color = BLACK):
         """Flash color across all display pixels multiple times."""
         self.wake_display()
         if self.display_controller:
-            self.display_controller.flash_display(bytes.fromhex(color), duration, flashes, end_color)
+            threading.Thread(target=self.display_controller.flash_display_mine(bytes.fromhex(color), duration, flashes, end_color)).start()
         else:
             logging.info("PortalBox flash_display failed")
 

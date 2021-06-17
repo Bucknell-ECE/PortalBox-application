@@ -136,3 +136,9 @@ class R2NeoPixelController(AbstractController):
             command = "color {} {} {}\n".format(end_color[0], end_color[1], end_color[2])
             self._transmit(command)
             return self._receive()
+
+    def flash_display_mine(self, flash_color, duration=2, flashes=5, end_color = BLACK):
+        for x in range(flashes):
+            self.set_display_color(flash_color)
+            time.sleep(duration/flashes)
+            self.set_display_color()

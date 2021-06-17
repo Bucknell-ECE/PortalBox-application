@@ -192,7 +192,7 @@ class RunningNoCard(State):
 
     def on_enter(self, input_data):
         self.grace_start = datetime.now()
-        self.service.box.set_display_color(self.service.settings["display"]["no_card_grace_color"])
+        self.service.box.flash_display(self.service.settings["display"]["no_card_grace_color"],self.grace_delta.total_seconds(),5)
 
 class RunningTimeout(State):
 
@@ -215,7 +215,8 @@ class RunningTimeout(State):
                 self.next_state(IdleUnknownCard, input_data)
 
     def on_enter(self, input_data):
-        self.grace_start = datetime.now()
+        self.timeout_start = datetime.now()
+        self.service.box.flash_display(self.service.settings["display"]["grace_timeout_color"],self.timeout_delta.total_seconds(),5)
         self.service.box.set_display_color(self.service.settings["display"]["grace_timeout_color"])
 
 class IdleAuthCard(State):
