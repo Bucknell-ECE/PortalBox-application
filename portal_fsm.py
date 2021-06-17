@@ -126,6 +126,10 @@ class AccessComplete(State):
 class IdleUnknownCard(State):
 
     def __call__(self, input_data):
+        pass
+
+
+    def on_enter(self, input_data):
         if(input_data["card_type"] == CardType.SHUTDOWN_CARD):
             logging.info("Inserted a shutdown card, shutting the box down")
             self.next_state(Shutdown, input_data)
@@ -137,10 +141,6 @@ class IdleUnknownCard(State):
         else:
             logging.info("Inserted card with id {}, is not authorized for this equipment".format(input_data["card_id"]))
             self.next_state(IdleUnauthCard, input_data)
-
-
-    def on_enter(self, input_data):
-        pass
 
 class RunningAuthUser(State):
 

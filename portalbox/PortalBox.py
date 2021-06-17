@@ -257,7 +257,6 @@ class PortalBox:
         self.wake_display()
         if self.display_controller:
             self.display_controller.set_display_color(bytes.fromhex(color))
-            logging.info("SHOULD HAVE SENT COLOR")
         else:
             logging.info("PortalBox set_display_color failed")
 
