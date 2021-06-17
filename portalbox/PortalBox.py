@@ -229,8 +229,9 @@ class PortalBox:
         Pulses the display with the specified color
         @param (bytes len 3) color - the color to set. Defaults to LED's off
         '''
+
         if self.display_controller:
-            self.display_controller.pulse_display(color)
+            self.display_controller.pulse_display(bytes.fromhex(color))
         else:
             logging.info("PortalBox pulse_display_color failed")
 
@@ -255,7 +256,7 @@ class PortalBox:
         '''
         self.wake_display()
         if self.display_controller:
-            self.display_controller.set_display_color(color)
+            self.display_controller.set_display_color(bytes.fromhex(color))
             logging.info("SHOULD HAVE SENT COLOR")
         else:
             logging.info("PortalBox set_display_color failed")
@@ -270,7 +271,7 @@ class PortalBox:
         '''
         self.wake_display()
         if self.display_controller:
-            self.display_controller.set_display_color_wipe(color, duration)
+            self.display_controller.set_display_color_wipe(bytes.fromhex(color), duration)
         else:
             logging.info("PortalBox color_wipe failed")
 
@@ -279,7 +280,7 @@ class PortalBox:
         """Flash color across all display pixels multiple times."""
         self.wake_display()
         if self.display_controller:
-            self.display_controller.flash_display(color, duration, flashes, end_color)
+            self.display_controller.flash_display(bytes.fromhex(color), duration, flashes, end_color)
         else:
             logging.info("PortalBox flash_display failed")
 
