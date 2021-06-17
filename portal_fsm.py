@@ -72,10 +72,12 @@ class State(object):
       Determines whether or not the grace period has expired
       @return a boolean which is True when the grace period has expired
       """
+      logging.debug("checking if grace time has expired")
       if((datetime.now() - self.grace_start) > self.grace_delta):
-        return True
+          logging.debug("time passed: {}".format((datetime.now() - self.grace_start))
+          return True
       else:
-        return False
+          return False
 
 class Setup(State):
     def __call__(self, input_data):
