@@ -113,7 +113,7 @@ class IdleNoCard(State):
             self.next_state(IdleUnknownCard, input_data)
 
     def on_enter(self, input_data):
-        self.service.box.pulse_display(self.service.settings["display"]"sleep_color"])
+        self.service.box.pulse_display(self.service.settings["display"]["sleep_color"])
 
 class AccessComplete(State):
     def __call__(self, input_data):
@@ -152,7 +152,7 @@ class RunningAuthUser(State):
         self.proxy_id = 0
         self.training_id = 0
         self.service.box.set_equipment_power_on(True)
-        self.service.box.set_display(self.service.settings["display"]"auth_color"])
+        self.service.box.set_display(self.service.settings["display"]["auth_color"])
         self.auth_user_id = input_data["card_id"]
         self.service.db.log_access_attempt(input_data["card_id"], self.equipment_id, True)
 
@@ -164,7 +164,7 @@ class IdleUnauthCard(State):
             self.next_state(IdleNoCard, input_data)
 
     def on_enter(self, input_data):
-        self.service.box.flash_display(self.service.settings["display"]"unauth_color"])
+        self.service.box.flash_display(self.service.settings["display"]["unauth_color"])
         self.service.db.log_access_attempt(input_data["card_id"], self.equipment_id, False)
 
 class RunningNoCard(State):
@@ -213,7 +213,7 @@ class RunningTimeout(State):
 
     def on_enter(self, input_data):
         self.grace_start = datetime.now()
-        self.service.box.flash_display(self.service.settings["display"]"grace_timeout_color"])
+        self.service.box.flash_display(self.service.settings["display"]["grace_timeout_color"])
 
 class IdleAuthCard(State):
 
@@ -224,7 +224,7 @@ class IdleAuthCard(State):
     def on_enter(self, input_data):
         self.service.box.set_equipment_power_on(False)
         self.service.send_user_email(input_data["card_id"])
-        self.service.box.set_display(self.service.settings["display"]"timeout_color"])
+        self.service.box.set_display(self.service.settings["display"]["timeout_color"])
 
 class RunningProxyCard(State):
 
@@ -237,7 +237,7 @@ class RunningProxyCard(State):
     def on_enter(self, input_data):
         self.training_id = 0
         self.service.box.set_equipment_power_on(True)
-        self.service.box.set_display(self.service.settings["display"]"proxy_color"])
+        self.service.box.set_display(self.service.settings["display"]["proxy_color"])
         self.proxy_id = input_data["card_id"]
         self.service.db.log_access_attempt(input_data["card_id"], self.equipment_id, True)
 
@@ -252,6 +252,6 @@ class RunningTrainingCard(State):
     def on_enter(self, input_data):
         self.proxy_id = 0
         self.service.box.set_equipment_power_on(True)
-        self.service.box.set_display(self.service.settings["display"]"training_color"])
+        self.service.box.set_display(self.service.settings["display"]["training_color"])
         self.training_id = input_data["card_id"]
         self.service.db.log_access_attempt(input_data["card_id"], self.equipment_id, True)
