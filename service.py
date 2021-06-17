@@ -67,11 +67,11 @@ class PortalBoxApplication():
         self.settings = settings
         self.running = False
 
-    # def __del__(self):
-    #     """
-    #     free resources after run
-    #     """
-    #     self.box.cleanup()
+    def __del__(self):
+        """
+        free resources after run
+        """
+        self.box.cleanup()
 
     def connect_to_database(self):
         # connect to backend database
@@ -230,21 +230,29 @@ if __name__ == "__main__":
             logging.basicConfig(level=logging.ERROR)
 
     # Create Badge Box Service
+    logging.debug("Creating PortalBoxApplication")
     service = PortalBoxApplication(settings)
 
     # Add signal handler so systemd can shutdown service
     signal.signal(signal.SIGINT, service.handle_interupt)
     signal.signal(signal.SIGTERM, service.handle_interupt)
 
-    logging.debug("test DEBUG")
-    logging.info("test INFO")
+
     # Create finite state machine
     fsm = fsm.Setup(service, input_data)
 
     # Run service
+    logging.debug("Running the FSM")
     while True:
         input_data = service.get_inputs()
         fsm(input_data)
+        #If the FSM is in the Shutdown state, then stop running the while loop
+        if(fsm.__class__ == "Shutdown"):
+            break
+    logging.debug("FSM ends")
 
     # Cleanup and exit
+    os.system("echo False > /tmp/running")
     service.box.cleanup()
+    logging.info("Shutting down logger")
+    logging.shutdown()

@@ -113,7 +113,7 @@ class IdleNoCard(State):
             self.next_state(IdleUnknownCard, input_data)
 
     def on_enter(self, input_data):
-        self.service.box.pulse_display(self.service.settings["display"]["sleep_color"])
+        self.service.box.set_display_color(self.service.settings["display"]["sleep_color"])
 
 class AccessComplete(State):
     def __call__(self, input_data):
@@ -127,12 +127,15 @@ class IdleUnknownCard(State):
 
     def __call__(self, input_data):
         if(input_data["card_type"] == CardType.SHUTDOWN_CARD):
+            logging.info("Inserted a shutdown card, shutting the box down")
             self.next_state(Shutdown, input_data)
 
         elif(input_data["user_is_authorized"]):
+            logging.info("Inserted card with id {}, is authorized for this equipment".format(input_data["card_id"]))
             self.next_state(RunningAuthUser, input_data)
 
         else:
+            logging.info("Inserted card with id {}, is not authorized for this equipment".format(input_data["card_id"]))
             self.next_state(IdleUnauthCard, input_data)
 
 
@@ -164,7 +167,7 @@ class IdleUnauthCard(State):
             self.next_state(IdleNoCard, input_data)
 
     def on_enter(self, input_data):
-        self.service.box.flash_display(self.service.settings["display"]["unauth_color"])
+        self.service.box.set_display_color(self.service.settings["display"]["unauth_color"])
         self.service.db.log_access_attempt(input_data["card_id"], self.service.equipment_id, False)
 
 class RunningNoCard(State):
@@ -189,7 +192,7 @@ class RunningNoCard(State):
 
     def on_enter(self, input_data):
         self.grace_start = datetime.now()
-        self.service.box.flash_display("no_card_grace_color")
+        self.service.box.set_display_color("no_card_grace_color")
 
 class RunningTimeout(State):
 
@@ -213,7 +216,7 @@ class RunningTimeout(State):
 
     def on_enter(self, input_data):
         self.grace_start = datetime.now()
-        self.service.box.flash_display(self.service.settings["display"]["grace_timeout_color"])
+        self.service.box.set_display_color(self.service.settings["display"]["grace_timeout_color"])
 
 class IdleAuthCard(State):
 
