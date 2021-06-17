@@ -186,8 +186,7 @@ if __name__ == "__main__":
     settings = configparser.ConfigParser()
     settings.read(config_file_path)
 
-    # Create Badge Box Service
-    service = PortalBoxApplication(settings)
+
 
     # Setup logging
     if settings.has_option('logging', 'level'):
@@ -203,11 +202,16 @@ if __name__ == "__main__":
             logging.basicConfig(level=logging.DEBUG)
         else:
             logging.basicConfig(level=logging.ERROR)
-            
+
+    # Create Badge Box Service
+    service = PortalBoxApplication(settings)
+
     # Add signal handler so systemd can shutdown service
     signal.signal(signal.SIGINT, service.handle_interupt)
     signal.signal(signal.SIGTERM, service.handle_interupt)
 
+    logging.debug("test DEBUG")
+    logging.info("test INFO")
     # Create finite state machine
     fsm = fsm.Setup(service, input_data)
 
