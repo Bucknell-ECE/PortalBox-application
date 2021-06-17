@@ -74,7 +74,7 @@ class State(object):
       """
       logging.debug("checking if grace time has expired")
       if((datetime.now() - self.grace_start) > self.grace_delta):
-          logging.debug("time passed: {}".format((datetime.now() - self.grace_start))
+          logging.debug("time passed: {}".format((datetime.now() - self.grace_start)))
           return True
       else:
           return False
