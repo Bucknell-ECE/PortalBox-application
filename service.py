@@ -139,7 +139,7 @@ class PortalBoxApplication():
                 "card_type": self.db.get_card_type(new_card_id),
                 "button_pressed": self.box.has_button_been_pressed()
             }
-        else:
+        elif(new_card_id <= 0):
             new_inputs = {
                 "card_id": -1,
                 "user_is_authorized": False,
