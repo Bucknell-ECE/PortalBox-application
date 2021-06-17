@@ -99,8 +99,9 @@ class PortalBoxApplication():
 
     def get_equipment_role(self):
         # Step 2 Figure out our identity
+        logging.debug("Attempting to get mac address")
         mac_address = format(get_mac_address(), "x")
-        logging.info("Successfully got mac address")
+        logging.debug("Successfully got mac address")
 
         # determine what we are
         profile = (-1,)
