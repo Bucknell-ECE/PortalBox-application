@@ -127,11 +127,11 @@ class PortalBoxApplication():
         self.db.log_started_status(self.equipment_id)
 
 
-    def get_inputs(self):
+    def get_inputs(self, old_input_data):
         new_card_id = self.box.read_RFID_card()
         if(new_card_id <= 0):
             new_card_id = self.box.read_RFID_card()
-        if(new_card_id > 0):
+        if(new_card_id > 0 and new_card_id != old_input_data["card_id"]):
             new_inputs = {
                 "card_id": new_card_id,
                 "user_is_authorized": self.get_user_auths(new_card_id),
@@ -247,7 +247,7 @@ if __name__ == "__main__":
     # Run service
     logging.debug("Running the FSM")
     while True:
-        input_data = service.get_inputs()
+        input_data = service.get_inputs(input_data)
         fsm(input_data)
         #If the FSM is in the Shutdown state, then stop running the while loop
         if(fsm.__class__ == "Shutdown"):
