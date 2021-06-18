@@ -73,6 +73,7 @@ class PortalBox:
 
         GPIO.setup(GPIO_INTERLOCK_PIN, GPIO.OUT)
         GPIO.setup(GPIO_BUZZER_PIN, GPIO.OUT)
+        self.buzzer_pwm = GPIO.PWM(GPIO_BUZZER_PIN, 10)
         GPIO.setup(GPIO_SOLID_STATE_RELAY_PIN, GPIO.OUT)
 
         GPIO.setup(GPIO_BUTTON_PIN, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
@@ -106,6 +107,13 @@ class PortalBox:
         # keep track of values in RFID module registers
         self.outlist = [0] * 64
 
+    def test_buzzer(self):
+        logging.info("testing frequency w/ d.c. of 50%")
+        self.buzzer_pwm.start(50)
+        for f in range(1,20000,100):
+            logging.info("frequency of {}".format(f))
+            self.buzzer_pwm.ChangeFrequency(f)
+            sleep(.5)
 
     def set_equipment_power_on(self, state):
         '''
@@ -200,10 +208,8 @@ class PortalBox:
            sleep(10)
 
         # Scan for cards
-        ##TODO remove this test
-        start_time = time_ns()
         (status, TagType) = self.RFIDReader.MFRC522_Request(MFRC522.PICC_REQIDL)
-        logging.info("time took to check card status is {}".format(time_ns()-start_time))
+
         if MFRC522.MI_OK == status:
             # Get the UID of the card
             #logging.debug("MFRC522 request status, uid")

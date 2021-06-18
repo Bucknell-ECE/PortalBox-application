@@ -94,6 +94,7 @@ class Setup(State):
             self.service.get_equipment_role()
             self.timeout_delta = timedelta(minutes = self.service.timeout_minutes)
             self.grace_delta = timedelta(seconds = self.service.settings.getint("user_exp","grace_period"))
+            self.service.box.test_buzzer()
         except Exception as e:
             logging.error("Unable to complete setup exception raised \n\t{}".format(e))
             self.next_state(Shutdown, input_data)
