@@ -108,12 +108,21 @@ class PortalBox:
         self.outlist = [0] * 64
 
     def test_buzzer(self):
+        logging.info("testing dc w/ f of 100")
+        self.buzzer_pwm.start(0)
+        self.buzzer_pwm.ChangeFrequency(100)
+        for dc in range(0,101,1):
+            logging.info("duty cycle of of {}".format(dc))
+            self.buzzer_pwm.ChangeDutyCycle(dc)
+            sleep(.5)
+        self.buzzer_pwm.stop()
         logging.info("testing frequency w/ d.c. of 50%")
-        self.buzzer_pwm.start(50)
-        for f in range(1,20000,100):
+        self.buzzer_pwm.start(10)
+        for f in range(1,200,1):
             logging.info("frequency of {}".format(f))
             self.buzzer_pwm.ChangeFrequency(f)
             sleep(.5)
+
 
     def set_equipment_power_on(self, state):
         '''
