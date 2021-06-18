@@ -149,11 +149,12 @@ class PortalBoxApplication():
         return new_input_data
 
     def read_card(self):
-        logging.debug("Reading card")
-        self.card_id = self.box.read_RFID_card()
-        # if(self.card_id <= 0):
-        #     self.card_id = self.box.read_RFID_card()
-        logging.debug("read card with id of {}".format(self.card_id))
+        while True:
+            logging.debug("Reading card")
+            self.card_id = self.box.read_RFID_card()
+            # if(self.card_id <= 0):
+            #     self.card_id = self.box.read_RFID_card()
+            logging.debug("read card with id of {}".format(self.card_id))
 
     def get_user_auths(self, card_id):
         '''
