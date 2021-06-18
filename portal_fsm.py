@@ -112,6 +112,7 @@ class Shutdown(State):
 class IdleNoCard(State):
 
     def __call__(self, input_data):
+        self.service.box.set_display_color(self.service.settings["display"]["sleep_color"])
         if(input_data["card_id"] > 0):
             self.next_state(IdleUnknownCard, input_data)
 
