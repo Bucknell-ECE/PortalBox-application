@@ -282,7 +282,7 @@ class PortalBox:
         if self.display_controller:
             flash_thread = threading.Thread(target=self.display_controller.flash_display_mine(bytes.fromhex(color), duration, flashes, end_color))
 
-            flash_thread.start()
+            return flash_thread
         else:
             logging.info("PortalBox flash_display failed")
 
