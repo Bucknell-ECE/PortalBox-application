@@ -176,6 +176,7 @@ class RunningNoCard(State):
 
     def __call__(self, input_data):
         if(input_data["card_id"] > 0):
+            grace_timer.cancel()
             if(input_data["card_type"] == CardType.PROXY_CARD):
                 self.next_state(RunningProxyCard, input_data)
             elif(input_data["card_type"] == CardType.TRAINING_CARD):
@@ -187,12 +188,14 @@ class RunningNoCard(State):
                 self.next_state(IdleUnknownCard, input_data)
 
         elif(
-                self.grace_expired() or
+                # self.grace_expired() or
                 input_data["button_pressed"]
             ):
             self.next_state(IdleNoCard, input_data)
 
     def on_enter(self, input_data):
+        grace_timer = threading.Timer(self.grace_delta.total_seconds(), self.next_state(IdleNoCard, input_data))
+        grace_timer.start()
         self.grace_start = datetime.now()
         self.service.box.flash_display(self.service.settings["display"]["no_card_grace_color"],self.grace_delta.total_seconds(),5)
 
