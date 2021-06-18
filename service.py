@@ -144,8 +144,6 @@ class PortalBoxApplication():
             }
         else:
             new_input_data = old_input_data
-
-
         return new_input_data
 
     def read_card(self):
