@@ -123,6 +123,39 @@ class PortalBox:
             self.buzzer_pwm.ChangeFrequency(f)
             sleep(.5)
 
+    def play_song(self):
+        song = "vvv v a b cb c4"
+        # song = "abccdb8 aabca gg2gd4 aabcacd babag4 aabcag2ddded4"# rick astely somewhat
+        song = song.upper()
+        notes = {
+        " ": 0,
+        "D": 294,
+        "E": 330,
+        "F": 349,
+        "G": 392,
+        "A": 440,
+        "B": 494,
+        "C": 523,
+        "V": 262
+        }
+        self.buzzer_pwm.start(50)
+        q_note_length = .1
+        for i,n in enumerate(song.upper()):
+            if(n != " ")
+                self.buzzer_pwm.ChangeDutyCycle(50)
+                self.buzzer_pwm.ChangeFrequency(notes[n])
+                if(unicode(song[i+1]).isnumeric()):
+                    sleep(q_note_length*int(song[i+1]))
+                else:
+                    sleep(q_note_length)
+            elif(unicode(n).isnumeric()):
+                continue
+            elif(n == " "):
+                self.buzzer_pwm.ChangeDutyCycle(0)
+                sleep(q_note_length)
+
+
+
 
     def set_equipment_power_on(self, state):
         '''
