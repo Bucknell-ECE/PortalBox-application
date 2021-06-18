@@ -203,7 +203,7 @@ class PortalBox:
         ##TODO remove this test
         start_time = time_ns()
         (status, TagType) = self.RFIDReader.MFRC522_Request(MFRC522.PICC_REQIDL)
-        logging.info("time took to check card status is {}".format(time_ns()-time_start))
+        logging.info("time took to check card status is {}".format(time_ns()-start_time))
         if MFRC522.MI_OK == status:
             # Get the UID of the card
             #logging.debug("MFRC522 request status, uid")
