@@ -189,7 +189,7 @@ class RunningNoCard(State):
                 self.next_state(IdleUnknownCard, input_data)
 
         elif(
-                # self.grace_expired() or
+                self.grace_expired() or
                 input_data["button_pressed"]
             ):
             self.next_state(IdleNoCard, input_data)
@@ -197,6 +197,7 @@ class RunningNoCard(State):
     def on_enter(self, input_data):
         self.grace_start = datetime.now()
         self.service.box.flash_display(self.service.settings["display"]["no_card_grace_color"],self.grace_delta.total_seconds(),5)
+        logging.info("test")
 class RunningTimeout(State):
 
     def __call__(self, input_data):
