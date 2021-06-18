@@ -280,19 +280,12 @@ class PortalBox:
         """Flash color across all display pixels multiple times."""
         self.wake_display()
         if self.display_controller:
-            # self.display_controller.flash_display_mine(bytes.fromhex(color), duration, flashes, end_color)
             flash_thread = threading.Thread(target=self.display_controller.flash_display_mine, args = (bytes.fromhex(color), duration, flashes, end_color,))
             flash_thread.start()
-            # return flash_thread
         else:
             logging.info("PortalBox flash_display failed")
 
-    def stop_flashing(self):
-        self.wake_display()
-        if self.display_controller:
-            self.display_controller.stop_flashing()
-        else:
-            logging.info("PortalBox stop_display failed")
+
 
     def cleanup(self):
         logging.info("PortalBox.cleanup() starts")

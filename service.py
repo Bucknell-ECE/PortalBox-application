@@ -130,8 +130,14 @@ class PortalBoxApplication():
         new_card_id = self.box.read_RFID_card()
         if(new_card_id <= 0):
             new_card_id = self.box.read_RFID_card()
-        self.box.has_button_been_pressed()
-        if(new_card_id > 0 and new_card_id != old_input_data["card_id"]):
+        if(self.box.has_button_been_pressed()):
+            new_input_data = {
+                "card_id": old_input_data["card_id"],
+                "user_is_authorized": old_input_data["user_is_authorized"],
+                "card_type": old_input_data["card_type"],
+                "button_pressed": True
+            }
+        elif(new_card_id > 0 and new_card_id != old_input_data["card_id"]):
             new_input_data = {
                 "card_id": new_card_id,
                 "user_is_authorized": self.get_user_auths(new_card_id),
