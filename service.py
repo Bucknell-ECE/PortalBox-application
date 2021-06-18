@@ -127,17 +127,14 @@ class PortalBoxApplication():
 
 
     def get_inputs(self, old_input_data):
-        new_card_id = self.box.read_RFID_card()
-        if(new_card_id <= 0):
-            new_card_id = self.box.read_RFID_card()
-        if(new_card_id > 0 and new_card_id != old_input_data["card_id"]):
+        if(self.card_id > 0 and self.card_id != old_input_data["card_id"]):
             new_input_data = {
-                "card_id": new_card_id,
-                "user_is_authorized": self.get_user_auths(new_card_id),
-                "card_type": self.db.get_card_type(new_card_id),
+                "card_id": self.card_id,
+                "user_is_authorized": self.get_user_auths(self.card_id),
+                "card_type": self.db.get_card_type(self.card_id),
                 "button_pressed": self.box.has_button_been_pressed()
             }
-        elif(new_card_id <= 0):
+        elif(self.card_id <= 0):
             new_input_data = {
                 "card_id": -1,
                 "user_is_authorized": False,
@@ -149,6 +146,11 @@ class PortalBoxApplication():
 
 
         return new_input_data
+
+    def read_card(self):
+        self.card_id = self.box.read_RFID_card()
+        if(self.card_id <= 0):
+            self.card_id = self.box.read_RFID_card()
 
     def get_user_auths(self, card_id):
         '''
@@ -243,7 +245,9 @@ if __name__ == "__main__":
     # Create finite state machine
     fsm = fsm.Setup(service, input_data)
 
+    card_reader_thread = threading.Thread(target = service.read_card,daemon = True)
     # Run service
+
     logging.debug("Running the FSM")
     while True:
         input_data = service.get_inputs(input_data)
