@@ -138,7 +138,8 @@ class R2NeoPixelController(AbstractController):
             return self._receive()
 
     def flash_display_mine(self, flash_color, duration=2, flashes=5, end_color = BLACK):
-        global stop_threads = False
+        global stop_threads
+        stop_threads = False
         while True:
             self.set_display_color(flash_color)
             sleep(duration/flashes)
