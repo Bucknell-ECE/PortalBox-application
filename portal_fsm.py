@@ -195,10 +195,8 @@ class RunningNoCard(State):
             self.next_state(IdleNoCard, input_data)
 
     def on_enter(self, input_data):
-        grace_timer = threading.Timer(self.grace_delta.total_seconds()+3, self.next_state(IdleNoCard, input_data))
         self.grace_start = datetime.now()
         self.service.box.flash_display(self.service.settings["display"]["no_card_grace_color"],self.grace_delta.total_seconds(),5)
-        grace_timer.start()
 class RunningTimeout(State):
 
     def __call__(self, input_data):
