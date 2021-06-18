@@ -255,8 +255,6 @@ class PortalBox:
         Set the entire strip to specified color.
         @param (bytes len 3) color - the color to set. Defaults to LED's off
         '''
-        while(self.flash_thread.is_alive()):
-            sleep(.01)
         self.wake_display()
         if self.display_controller:
             self.display_controller.set_display_color(bytes.fromhex(color))
@@ -282,8 +280,8 @@ class PortalBox:
         """Flash color across all display pixels multiple times."""
         self.wake_display()
         if self.display_controller:
-            self.flash_thread = threading.Thread(target=self.display_controller.flash_display_mine, args = (bytes.fromhex(color), duration, flashes, end_color,))
-            self.flash_thread.start()
+            flash_thread = threading.Thread(target=self.display_controller.flash_display_mine, args = (bytes.fromhex(color), duration, flashes, end_color,))
+            flash_thread.start()
         else:
             logging.info("PortalBox flash_display failed")
 
