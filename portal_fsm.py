@@ -9,6 +9,7 @@ https://stackoverflow.com/questions/2101961/python-state-machine-design
 # from standard library
 from datetime import datetime, timedelta
 import logging
+import threading
 
 # our code
 from CardType import CardType
