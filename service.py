@@ -65,6 +65,7 @@ class PortalBoxApplication():
         self.box = PortalBox(settings)
         self.settings = settings
         self.running = False
+        self.card_id = 0
 
     def __del__(self):
         """
