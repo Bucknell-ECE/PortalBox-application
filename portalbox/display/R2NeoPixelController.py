@@ -132,6 +132,7 @@ class R2NeoPixelController(AbstractController):
         '''
         Flashes the display until self.flash_signal is set to False
         '''
+        loggin.debug("started flashing")
         self.flash_signal = True
         while self.flash_signal:
             self.set_display_color(flash_color)
