@@ -89,11 +89,7 @@ class Database:
         '''
         logging.debug("Attempting to connect to database")
 
-        connection = mysql.connector.connect(**self.connection_settings)
-
-        logging.debug("Connected to database")
-
-        return connection
+        return mysql.connector.connect(**self.connection_settings)
 
 
     def is_registered(self, mac_address):
