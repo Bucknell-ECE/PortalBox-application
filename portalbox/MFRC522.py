@@ -195,7 +195,7 @@ class MFRC522:
             st1 = time.time_ns()
             n = self.Read_MFRC522(self.CommIrqReg)
             i = i - 1
-            if ~((i!=0) and ~(n&0x01) and ~(n&waitIRq)):
+            if ~((i!=0) and (n^0x01) and (n^waitIRq)):
                 break
             times.append(time.time_ns()-st1)
         logging.info("looped {} times".format(len(times)))
