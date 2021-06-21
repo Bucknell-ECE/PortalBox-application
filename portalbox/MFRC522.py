@@ -200,7 +200,7 @@ class MFRC522:
                 break
             times.append(time.time_ns()-st1)
         logging.info("looped {} times".format(len(times)))
-        logging.info("average time was {}".format(sum(times)/len(times)))
+        logging.info("average time was {}".format(sum(times)/(len(times)+1))
         logging.info("194:while True: took {}".format(time.time_ns()-st4))
         self.ClearBitMask(self.BitFramingReg, 0x80)
 
