@@ -81,6 +81,10 @@ class State(object):
           return False
 
 class Setup(State):
+    """
+    The first state, trys to setup everything that needs to be setup and goes
+        to shutdown if it can't
+    """
     def __call__(self, input_data):
         pass
 
@@ -102,7 +106,9 @@ class Setup(State):
 
 
 class Shutdown(State):
-
+    """
+    Shuts down the box
+    """
     def __call__(self, input_data):
       self.service.box.set_equipment_power_on(False)
       self.service.box.set_display_color()# Turns off the display
@@ -111,7 +117,9 @@ class Shutdown(State):
 
 
 class IdleNoCard(State):
-
+    """
+    The state that it will spend the most time in, waits for some card input
+    """
     def __call__(self, input_data):
         if(input_data["card_id"] > 0):
             self.next_state(IdleUnknownCard, input_data)
@@ -120,18 +128,23 @@ class IdleNoCard(State):
         self.service.box.set_display_color(self.service.settings["display"]["sleep_color"])
 
 class AccessComplete(State):
+    """
+    Before returning to the Idle state it logs the machine usage, and turns off
+        the power to the machine
+    """
     def __call__(self, input_data):
         pass
 
     def on_enter(self, input_data):
-        #Holds the color to show that its not yet ready for a card
-        #self.service.box.set_display_color(self.service.settings["display"]["no_card_grace_color"])
+        logging.info("Usage complete, logging usage and turning off machine")
         self.service.db.log_access_completion(input_data["card_id"], self.service.equipment_id)
         self.service.box.set_equipment_power_on(False)
         self.next_state(IdleNoCard, input_data)
 
 class IdleUnknownCard(State):
-
+    """
+    A card input has been read, the next state is determined by the card type
+    """
     def __call__(self, input_data):
         pass
 
@@ -150,7 +163,9 @@ class IdleUnknownCard(State):
             self.next_state(IdleUnauthCard, input_data)
 
 class RunningAuthUser(State):
-
+    """
+    An authorized user has put their card in, the machine will function
+    """
     def __call__(self, input_data):
         if(input_data["card_id"] <= 0):
             self.next_state(RunningNoCard, input_data)
@@ -159,6 +174,7 @@ class RunningAuthUser(State):
             self.next_state(RunningTimeout, input_data)
 
     def on_enter(self, input_data):
+        logging.info("Authorized card in box, turning machine on and logging access")
         self.timeout_start = datetime.now()
         self.proxy_id = 0
         self.training_id = 0
@@ -169,17 +185,23 @@ class RunningAuthUser(State):
 
 
 class IdleUnauthCard(State):
-
+    """
+    An unauthorized card has been put into the machine, turn off machine
+    """
     def __call__(self, input_data):
         if(input_data["card_id"] <= 0):
             self.next_state(IdleNoCard, input_data)
 
     def on_enter(self, input_data):
+        self.service.box.set_equipment_power_on(False)
         self.service.box.set_display_color(self.service.settings["display"]["unauth_color"])
         self.service.db.log_access_attempt(input_data["card_id"], self.service.equipment_id, False)
 
 class RunningNoCard(State):
-
+    """
+    An authorized card has been removed, waits for a new card until the grace
+        period expires, or a button is pressed
+    """
     def __call__(self, input_data):
         if(input_data["card_id"] > 0):
             self.service.box.stop_flashing()
@@ -201,11 +223,14 @@ class RunningNoCard(State):
             self.next_state(AccessComplete, input_data)
 
     def on_enter(self, input_data):
+        logging.info("Grace period started")
         self.grace_start = datetime.now()
-        self.service.box.flash_display(self.service.settings["display"]["no_card_grace_color"],self.grace_delta.total_seconds()-.5,5)
+        self.service.box.flash_display(self.service.settings["display"]["no_card_grace_color"],3)
 
 class RunningTimeout(State):
-
+    """
+    The machine has timed out, has a grace period before going to the next state
+    """
     def __call__(self, input_data):
         if(input_data["card_id"] <= 0):
             self.service.box.stop_flashing()
@@ -228,12 +253,16 @@ class RunningTimeout(State):
                 self.next_state(IdleUnknownCard, input_data)
 
     def on_enter(self, input_data):
-        self.timeout_start = datetime.now()
+        logging.info("Machine timout, grace period started")
+        self.grace_start = datetime.now()
         self.service.box.flash_display(self.service.settings["display"]["grace_timeout_color"],self.timeout_delta.total_seconds(),5)
         self.service.box.set_display_color(self.service.settings["display"]["grace_timeout_color"])
 
 class IdleAuthCard(State):
-
+    """
+    The timout grace period is expired and the user is sent and email that
+        their card is still in the machine, waits until the card is removed
+    """
     def __call__(self, input_data):
         if(input_data["card_id"] <= 0):
             self.next_state(AccessComplete, input_data)
@@ -244,7 +273,9 @@ class IdleAuthCard(State):
         self.service.box.set_display_color(self.service.settings["display"]["timeout_color"])
 
 class RunningProxyCard(State):
-
+    """
+    Runs the machine in the proxy mode
+    """
     def __call__(self, input_data):
         if(input_data["card_id"] <= 0):
             self.next_state(RunningNoCard, input_data)
@@ -259,7 +290,9 @@ class RunningProxyCard(State):
         self.service.db.log_access_attempt(input_data["card_id"], self.service.equipment_id, True)
 
 class RunningTrainingCard(State):
-
+    """
+    runs the machine in the training mode
+    """
     def __call__(self, input_data):
         if(input_data["card_id"] <= 0):
             self.next_state(RunningNoCard, input_data)

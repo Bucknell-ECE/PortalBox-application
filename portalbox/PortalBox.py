@@ -276,13 +276,13 @@ class PortalBox:
             logging.info("PortalBox color_wipe failed")
 
 
-    def flash_display(self, color, duration=2, flashes=5, end_color = BLACK):
-        """Flash color across all display pixels multiple times."""
+    def flash_display(self, color, rate = 2):
+        """Flash color across all display pixels multiple times. rate is in Hz"""
         self.wake_display()
         if self.display_controller:
             flash_thread = threading.Thread(
                 target = self.display_controller.flash_display_mine,
-                args = (bytes.fromhex(color), duration, flashes, end_color,),
+                args = (rate,),
                 name = "flashing_thread"
              )
             flash_thread.start()

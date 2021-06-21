@@ -74,6 +74,9 @@ class PortalBoxApplication():
         self.box.cleanup()
 
     def connect_to_database(self):
+        '''
+        Connects to the database
+        '''
         # connect to backend database
         logging.info("Attempting to connect to database")
 
@@ -98,12 +101,12 @@ class PortalBoxApplication():
 
 
     def get_equipment_role(self):
-        # Step 2 Figure out our identity
+        # Step 1 Figure out our identity
         logging.debug("Attempting to get mac address")
         mac_address = format(get_mac_address(), "x")
         logging.debug("Successfully got mac address")
 
-        # determine what we are
+        # Determine what we are
         profile = (-1,)
         while profile[0] < 0:
             profile = self.db.get_equipment_profile(mac_address)
@@ -129,27 +132,44 @@ class PortalBoxApplication():
 
     def get_inputs(self, old_input_data):
         """
-        Gets
+        Gets new inputs for the FSM and returns the dictionary
+
+        @returns a dictionary of the form
+                "card_id": (int)The card ID which was read,
+                "user_is_authorized": (boolean) Whether or not the user is authorized,
+                    for the current machine
+                "card_type": (CardType enum) the type of card,
+                "button_pressed": (boolean) whether or not the button has been
+                    pressed since the last time it was checked
         """
-        self.card_id = self.box.read_RFID_card()
-        if(self.card_id <= 0):
-            self.card_id = self.box.read_RFID_card()
 
-        new_input_data = {
-            "card_id": self.card_id,
-            "user_is_authorized": self.get_user_auths(self.card_id),
-            "card_type": self.db.get_card_type(self.card_id),
-            "button_pressed": self.box.has_button_been_pressed()
-        }
+        #Reads the card twice, since the reader fails to read the card every
+        #   other time
+        card_id = self.box.read_RFID_card()
+        if(card_id <= 0):
+            card_id = self.box.read_RFID_card()
+
+        #If a card is present, and its different than the old one
+        if(card_id > 0 and card_id != old_input_data["card_id"]):
+            new_input_data = {
+                "card_id": card_id,
+                "user_is_authorized": self.get_user_auths(card_id),
+                "card_type": self.db.get_card_type(card_id),
+                "button_pressed": self.box.has_button_been_pressed()
+            }
+        #If no card is present, just update the button
+        elif(card_id <= 0):
+            new_input_data = {
+                "card_id": -1,
+                "user_is_authorized": False,
+                "card_type": CardType.INVALID_CARD,
+                "button_pressed": self.box.has_button_been_pressed()
+            }
+        #Else just use the old data
+        else:
+            new_input_data = old_input_data
+
         return new_input_data
-
-    def read_card(self):
-        while True:
-            logging.debug("Reading card")
-            self.card_id = self.box.read_RFID_card()
-            # if(self.card_id <= 0):
-                # self.card_id = self.box.read_RFID_card()
-            logging.debug("read card with id of {}".format(self.card_id))
 
     def get_user_auths(self, card_id):
         '''
@@ -165,17 +185,24 @@ class PortalBoxApplication():
             user_auths = pickle.load(open(os.path.join(sys.path[0], LOCAL_DATABASE_FILE_PATH),"rb"))
             return equipment_type_id in user_auths[card_id][1]
 
+
     def send_user_email(self, auth_id):
-            logging.debug("Getting user email ID from DB")
-            user = self.db.get_user(auth_id)
-            try:
-                logging.debug("Mailing user")
-                self.emailer.send(user[1], "Access Card left in PortalBox", "{} it appears you left your access card in a badge box for the {} in the {}".format(user[0], self.equipment_type, self.location))
-            except Exception as e:
-                logging.error("{}".format(e))
+        '''
+        Sends the user an email when they have left their card in the machine
+            past the timeout
+        '''
+        logging.debug("Getting user email ID from DB")
+        user = self.db.get_user(auth_id)
+        try:
+            logging.debug("Mailing user")
+            self.emailer.send(user[1], "Access Card left in PortalBox", "{} it appears you left your access card in a badge box for the {} in the {}".format(user[0], self.equipment_type, self.location))
+        except Exception as e:
+            logging.error("{}".format(e))
 
     def handle_interupt(self, signum, frame):
-        ''' Stop the service from a signal'''
+        '''
+        Stop the service from a signal
+        '''
         logging.debug("Interrupted")
         os.system("echo service_interrupt > /tmp/boxactivity")
         self.shutdown()
@@ -183,7 +210,9 @@ class PortalBoxApplication():
 
 
     def shutdown(self):
-        ''' Stop looping in all run states '''
+        '''
+        Stops the program
+        '''
         logging.info("Service Exiting")
         os.system("echo service_exit > /tmp/boxactivity")
         os.system("echo False > /tmp/running")
@@ -249,6 +278,7 @@ if __name__ == "__main__":
     # Run service
 
     logging.debug("Running the FSM")
+    service.running = True
     while True:
         input_data = service.get_inputs(input_data)
         fsm(input_data)
@@ -262,3 +292,6 @@ if __name__ == "__main__":
     service.box.cleanup()
     logging.info("Shutting down logger")
     logging.shutdown()
+
+
+##TODO add a default config somehwere 
