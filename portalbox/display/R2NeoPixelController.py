@@ -144,6 +144,7 @@ class R2NeoPixelController(AbstractController):
             if(self.flash_signal == False):
                 break
             self.set_display_color()
+        logging.info("finshed flashing")
 
     def stop_flashing(self):
         '''
