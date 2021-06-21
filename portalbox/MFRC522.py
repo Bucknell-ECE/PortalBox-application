@@ -198,7 +198,7 @@ class MFRC522:
             if ~((i!=0) and ~(n&0x01) and ~(n&waitIRq)):
                 break
             times.append(time.time_ns()-st1)
-        logging.info("looped {} times".format(2000 - i))
+        logging.info("looped {} times".format(len(times)))
         logging.info("average time was {}".format(sum(times)/len(times)))
         logging.info("194:while True: took {}".format(time.time_ns()-st4))
         self.ClearBitMask(self.BitFramingReg, 0x80)
