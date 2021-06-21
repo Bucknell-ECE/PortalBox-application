@@ -282,7 +282,7 @@ class PortalBox:
         if self.display_controller:
             flash_thread = threading.Thread(
                 target = self.display_controller.flash_display,
-                args = (color, rate,),
+                args = (bytes.fromhex(color), rate,),
                 name = "flashing_thread",
                 daemon = True
              )
