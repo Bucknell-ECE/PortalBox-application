@@ -174,21 +174,15 @@ class MFRC522:
         if command == self.PCD_TRANSCEIVE:
             irqEn = 0x77
             waitIRq = 0x30
-        st1 = time.time_ns()
         self.Write_MFRC522(self.CommIEnReg, irqEn|0x80)
-        logging.info("178:self.Write_MFRC522(self.CommIEnReg, irqEn|0x80) took {}".format(time.time_ns()-st1))
         self.ClearBitMask(self.CommIrqReg, 0x80)
         self.SetBitMask(self.FIFOLevelReg, 0x80)
 
-        st2 = time.time_ns()
         self.Write_MFRC522(self.CommandReg, self.PCD_IDLE)
-        logging.info("184:self.Write_MFRC522(self.CommandReg, self.PCD_IDLE) took {}".format(time.time_ns()-st2))
 
-        st3 = time.time_ns()
         while(i<len(sendData)):
             self.Write_MFRC522(self.FIFODataReg, sendData[i])
             i = i+1
-        logging.info("188:while(i<len(sendData)): took {}".format(time.time_ns()-st3))
         self.Write_MFRC522(self.CommandReg, command)
 
         if command == self.PCD_TRANSCEIVE:
@@ -196,15 +190,19 @@ class MFRC522:
 
         i = 2000
         st4 = time.time_ns()
+        times = []
         while True:
+            st1 = time.time_ns()
             n = self.Read_MFRC522(self.CommIrqReg)
             i = i - 1
             if ~((i!=0) and ~(n&0x01) and ~(n&waitIRq)):
                 break
-        logging.info("199:while True: took {}".format(time.time_ns()-st4))
+            times.append(time.time_ns()-st1)
+        logging.info("looped {} times".format(2000 - i))
+        logging.info("average time was {}".format(sum(times)/len(times)))
+        logging.info("194:while True: took {}".format(time.time_ns()-st4))
         self.ClearBitMask(self.BitFramingReg, 0x80)
 
-        st5 = time.time_ns()
         if i != 0:
             if (self.Read_MFRC522(self.ErrorReg) & 0x1B)==0x00:
                 status = self.MI_OK
@@ -231,7 +229,6 @@ class MFRC522:
                         i = i + 1
             else:
                 status = self.MI_ERR
-        logging.info("208:if i != 0:: took {}".format(time.time_ns()-st5))
         return (status,backData,backLen)
 
 
