@@ -224,7 +224,6 @@ class PortalBoxApplication():
         else:
             # never made it to the run state
             logging.info("Not running, just exit")
-            sys.exit()
         sys.exit()
 
 
