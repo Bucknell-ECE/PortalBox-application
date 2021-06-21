@@ -194,8 +194,10 @@ class MFRC522:
             i = i - 1
             logging.info("n = {}".format(n))
             logging.info("{} {} {}".format((i!=0),~(n&0x01),~(n&waitIRq)))
-            if ~((i!=0) and ~(n&0x01) and ~(n&waitIRq)):
+            if( (i <= 0) or ((n&0x01) != 0) or ((n&waitIRq) != 0)):
                 break
+            # if ~((i!=0) and ~(n&0x01) and (n&waitIRq)):
+            #     break
         self.ClearBitMask(self.BitFramingReg, 0x80)
 
         if i != 0:
