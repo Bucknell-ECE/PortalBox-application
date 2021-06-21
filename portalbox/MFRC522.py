@@ -158,6 +158,7 @@ class MFRC522:
 
 
     def MFRC522_ToCard(self,command,sendData):
+
         backData = []
         backLen = 0
         status = self.MI_ERR
@@ -173,31 +174,37 @@ class MFRC522:
         if command == self.PCD_TRANSCEIVE:
             irqEn = 0x77
             waitIRq = 0x30
-
+        st1 = time.time_ns()
         self.Write_MFRC522(self.CommIEnReg, irqEn|0x80)
+        logging.info("178:self.Write_MFRC522(self.CommIEnReg, irqEn|0x80) took {}".format(time.time_ns()-st1))
         self.ClearBitMask(self.CommIrqReg, 0x80)
         self.SetBitMask(self.FIFOLevelReg, 0x80)
 
+        st2 = time.time_ns()
         self.Write_MFRC522(self.CommandReg, self.PCD_IDLE)
+        logging.info("184:self.Write_MFRC522(self.CommandReg, self.PCD_IDLE) took {}".format(time.time_ns()-st2))
 
+        st3 = time.time_ns()
         while(i<len(sendData)):
             self.Write_MFRC522(self.FIFODataReg, sendData[i])
             i = i+1
-
+        logging.info("188:while(i<len(sendData)): took {}".format(time.time_ns()-st3))
         self.Write_MFRC522(self.CommandReg, command)
 
         if command == self.PCD_TRANSCEIVE:
             self.SetBitMask(self.BitFramingReg, 0x80)
 
         i = 2000
+        st4 = time.time_ns()
         while True:
             n = self.Read_MFRC522(self.CommIrqReg)
             i = i - 1
             if ~((i!=0) and ~(n&0x01) and ~(n&waitIRq)):
                 break
-
+        logging.info("199:while True: took {}".format(time.time_ns()-st4))
         self.ClearBitMask(self.BitFramingReg, 0x80)
 
+        st5 = time.time_ns()
         if i != 0:
             if (self.Read_MFRC522(self.ErrorReg) & 0x1B)==0x00:
                 status = self.MI_OK
@@ -224,7 +231,7 @@ class MFRC522:
                         i = i + 1
             else:
                 status = self.MI_ERR
-
+        logging.info("208:if i != 0:: took {}".format(time.time_ns()-st5))
         return (status,backData,backLen)
 
 
@@ -232,14 +239,10 @@ class MFRC522:
         status = None
         backBits = None
         TagType = []
-        st1 = time.time_ns()
         self.Write_MFRC522(self.BitFramingReg, 0x07)
-        logging.info("self.Write_MFRC522(self.BitFramingReg, 0x07) Took {}".format(time.time_ns()-st1))
 
         TagType.append(reqMode)
-        st2 = time.time_ns()
         (status,backData,backBits) = self.MFRC522_ToCard(self.PCD_TRANSCEIVE, TagType)
-        logging.info("self.MFRC522_ToCard(self.PCD_TRANSCEIVE, TagType) Took {}".format(time.time_ns()-st2))
         if ((status != self.MI_OK) | (backBits != 0x10)):
             status = self.MI_ERR
 
