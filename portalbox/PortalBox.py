@@ -281,7 +281,7 @@ class PortalBox:
         self.wake_display()
         if self.display_controller:
             flash_thread = threading.Thread(
-                target = self.display_controller.flash_display_mine,
+                target = self.display_controller.flash_display,
                 args = (rate,),
                 name = "flashing_thread"
              )
