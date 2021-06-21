@@ -189,19 +189,12 @@ class MFRC522:
             self.SetBitMask(self.BitFramingReg, 0x80)
 
         i = 2000
-        st4 = time.time_ns()
-        times = []
         while True:
-            st1 = time.time_ns()
             n = self.Read_MFRC522(self.CommIrqReg)
-            logging.info("n={}".format(n))
             i = i - 1
-            if ~((i!=0) and ~(n&0x01) and (n!=waitIRq)):
+            if ((i<=0) or (n==0x01) or (n==waitIRq)):
                 break
-            times.append(time.time_ns()-st1)
-        logging.info("looped {} times".format(len(times)))
-        logging.info("average time was {}".format(sum(times)/(len(times)+1)))
-        logging.info("194:while True: took {}".format(time.time_ns()-st4))
+
         self.ClearBitMask(self.BitFramingReg, 0x80)
 
         if i != 0:
