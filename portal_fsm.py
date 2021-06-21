@@ -82,7 +82,7 @@ class State(object):
 
 class Setup(State):
     def __call__(self, input_data):
-        self.next_state(IdleNoCard, input_data)
+        pass
 
     def on_enter(self, input_data):
         #Do everything related to setup, if anything fails and returns an exception, then go to Shutdown
@@ -97,6 +97,7 @@ class Setup(State):
         except Exception as e:
             logging.error("Unable to complete setup exception raised: \n\t{}".format(e))
             self.next_state(Shutdown, input_data)
+        self.next_state(IdleNoCard, input_data)
 
 
 
@@ -120,12 +121,14 @@ class IdleNoCard(State):
 
 class AccessComplete(State):
     def __call__(self, input_data):
-        self.next_state(IdleNoCard, input_data)
+        pass
 
     def on_enter(self, input_data):
-        self.service.box.set_display_color(self.service.settings["display"]["proxy_color"])
+        #Holds the color to show that its not yet ready for a card
+        self.service.box.set_display_color(self.service.settings["display"]["no_card_grace_color"])
         self.service.db.log_access_completion(input_data["card_id"], self.service.equipment_id)
         self.service.box.set_equipment_power_on(False)
+        self.next_state(IdleNoCard, input_data)
 
 class IdleUnknownCard(State):
 
