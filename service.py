@@ -225,6 +225,7 @@ class PortalBoxApplication():
             # never made it to the run state
             logging.info("Not running, just exit")
             sys.exit()
+        sys.exit()
 
 
 
@@ -294,4 +295,4 @@ if __name__ == "__main__":
     logging.shutdown()
 
 
-##TODO add a default config somehwere 
+##TODO add a default config somehwere
