@@ -135,6 +135,7 @@ class R2NeoPixelController(AbstractController):
         logging.debug("started flashing")
         self.flash_signal = True
         while self.flash_signal:
+            logging.debug("{}".format(flash_color))
             self.set_display_color(flash_color)
             if(self.flash_signal == False):
                 break
