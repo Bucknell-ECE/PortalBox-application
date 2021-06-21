@@ -255,8 +255,7 @@ class RunningTimeout(State):
     def on_enter(self, input_data):
         logging.info("Machine timout, grace period started")
         self.grace_start = datetime.now()
-        self.service.box.flash_display(self.service.settings["display"]["grace_timeout_color"],self.timeout_delta.total_seconds(),5)
-        self.service.box.set_display_color(self.service.settings["display"]["grace_timeout_color"])
+        self.service.box.flash_display(self.service.settings["display"]["grace_timeout_color"],3)
 
 class IdleAuthCard(State):
     """
