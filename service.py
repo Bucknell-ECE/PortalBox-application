@@ -128,26 +128,19 @@ class PortalBoxApplication():
 
 
     def get_inputs(self, old_input_data):
+        """
+        Gets
+        """
         self.card_id = self.box.read_RFID_card()
         if(self.card_id <= 0):
             self.card_id = self.box.read_RFID_card()
-            
-        if(self.card_id > 0 and self.card_id != old_input_data["card_id"]):
-            new_input_data = {
-                "card_id": self.card_id,
-                "user_is_authorized": self.get_user_auths(self.card_id),
-                "card_type": self.db.get_card_type(self.card_id),
-                "button_pressed": self.box.has_button_been_pressed()
-            }
-        elif(self.card_id <= 0):
-            new_input_data = {
-                "card_id": -1,
-                "user_is_authorized": False,
-                "card_type": CardType.INVALID_CARD,
-                "button_pressed": self.box.has_button_been_pressed()
-            }
-        else:
-            new_input_data = old_input_data
+
+        new_input_data = {
+            "card_id": self.card_id,
+            "user_is_authorized": self.get_user_auths(self.card_id),
+            "card_type": self.db.get_card_type(self.card_id),
+            "button_pressed": self.box.has_button_been_pressed()
+        }
         return new_input_data
 
     def read_card(self):

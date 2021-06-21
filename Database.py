@@ -78,6 +78,8 @@ class Database:
 
         self._connection = self._connect()
 
+        logging.debug("Reconnected to database")
+
         return self._connection
 
 
@@ -87,7 +89,11 @@ class Database:
         '''
         logging.debug("Attempting to connect to database")
 
-        return mysql.connector.connect(**self.connection_settings)
+        connection = mysql.connector.connect(**self.connection_settings)
+
+        logging.debug("Connected to database")
+
+        return connection
 
 
     def is_registered(self, mac_address):
