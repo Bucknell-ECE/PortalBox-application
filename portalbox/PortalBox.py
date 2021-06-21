@@ -257,6 +257,7 @@ class PortalBox:
         '''
         self.wake_display()
         if self.display_controller:
+            self.display_controller.stop_flashing()
             self.display_controller.set_display_color(bytes.fromhex(color))
         else:
             logging.info("PortalBox set_display_color failed")
@@ -285,7 +286,7 @@ class PortalBox:
         else:
             logging.info("PortalBox flash_display failed")
 
-    
+
 
 
 

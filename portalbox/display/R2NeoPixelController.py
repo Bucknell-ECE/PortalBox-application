@@ -107,7 +107,6 @@ class R2NeoPixelController(AbstractController):
         Set the entire strip to specified color.
         @param (color) color - the color to set defaults to LED's off
         '''
-        self.stop_flashing()
         command = "color {} {} {}\n".format(color[0], color[1], color[2])
         self._transmit(command)
         return self._receive()
