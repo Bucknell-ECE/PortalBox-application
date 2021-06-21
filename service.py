@@ -18,7 +18,6 @@
     of the LEDs
   - The beeper is activated for a short time when the equipment is being
     turned on, as a redundant indicator to the green display
-
 """
 
 
