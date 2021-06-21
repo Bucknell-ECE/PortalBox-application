@@ -272,8 +272,6 @@ class PortalBox:
         self.wake_display()
         if self.display_controller:
             self.display_controller.set_display_color_wipe(bytes.fromhex(color), duration)
-            while("flashing_thread" in [t.getName() for t in threading.enumerate()]):
-                pass
         else:
             logging.info("PortalBox color_wipe failed")
 
@@ -295,7 +293,8 @@ class PortalBox:
         "Stops the flashing thread"
         if self.display_controller:
             self.display_controller.flash_signal = False
-            while()
+            while("flashing_thread" in [t.getName() for t in threading.enumerate()]):
+                pass
         else:
             logging.info("PortalBox stop_flashing failed")
 
