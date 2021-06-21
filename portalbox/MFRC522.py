@@ -74,7 +74,7 @@ class MFRC522:
     Reserved14     = 0x1E
     SerialSpeedReg = 0x1F
 
-    Reserved20        = 0x20  
+    Reserved20        = 0x20
     CRCResultRegM     = 0x21
     CRCResultRegL     = 0x22
     Reserved21        = 0x23
@@ -182,7 +182,7 @@ class MFRC522:
         while(i<len(sendData)):
             self.Write_MFRC522(self.FIFODataReg, sendData[i])
             i = i+1
-        
+
         self.Write_MFRC522(self.CommandReg, command)
 
         if command == self.PCD_TRANSCEIVE:
@@ -231,15 +231,17 @@ class MFRC522:
         status = None
         backBits = None
         TagType = []
-
+        st1 = time.time_ns()
         self.Write_MFRC522(self.BitFramingReg, 0x07)
+        logging.info("self.Write_MFRC522(self.BitFramingReg, 0x07) Took {}".format(time.time_ns()-st1))
 
         TagType.append(reqMode)
+        st2 = time.time_ns()
         (status,backData,backBits) = self.MFRC522_ToCard(self.PCD_TRANSCEIVE, TagType)
-
+        logging.info("self.MFRC522_ToCard(self.PCD_TRANSCEIVE, TagType) Took {}".format(time.time_ns()-st2))
         if ((status != self.MI_OK) | (backBits != 0x10)):
             status = self.MI_ERR
-            
+
         return (status,backBits)
 
 
@@ -303,7 +305,7 @@ class MFRC522:
         buf.append(pOut[0])
         buf.append(pOut[1])
         (status, backData, backLen) = self.MFRC522_ToCard(self.PCD_TRANSCEIVE, buf)
-    
+
         if(status == self.MI_OK) and (backLen == 0x18):
             print("Size: " + str(backData[0]))
             return    backData[0]

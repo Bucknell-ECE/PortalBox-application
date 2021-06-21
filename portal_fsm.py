@@ -256,7 +256,7 @@ class RunningProxyCard(State):
         self.service.box.set_equipment_power_on(True)
         self.service.box.set_display_color(self.service.settings["display"]["proxy_color"])
         self.proxy_id = input_data["card_id"]
-        self.service.db.log_access_attempt(input_data["card_id"], self.equipment_id, True)
+        self.service.db.log_access_attempt(input_data["card_id"], self.service.equipment_id, True)
 
 class RunningTrainingCard(State):
 
@@ -271,4 +271,4 @@ class RunningTrainingCard(State):
         self.service.box.set_equipment_power_on(True)
         self.service.box.set_display_color(self.service.settings["display"]["training_color"])
         self.training_id = input_data["card_id"]
-        self.service.db.log_access_attempt(input_data["card_id"], self.equipment_id, True)
+        self.service.db.log_access_attempt(input_data["card_id"], self.service.equipment_id, True)
