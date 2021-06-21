@@ -193,8 +193,8 @@ class MFRC522:
             n = self.Read_MFRC522(self.CommIrqReg)
             i = i - 1
             logging.info("n = {}".format(n))
-            logging.info("{} {} {}".format((i!=0),~(n!=0x01),~(n&waitIRq)))
-            if ~((i!=0) and ~(n!=0x01) and ~(n&waitIRq)):
+            logging.info("{} {} {}".format((i!=0),~(n&0x01),~(n&waitIRq)))
+            if ~((i!=0) and ~(n&0x01) and ~(n&waitIRq)):
                 break
         self.ClearBitMask(self.BitFramingReg, 0x80)
 
