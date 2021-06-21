@@ -7,6 +7,7 @@ from __future__ import print_function
 # Import from python standard library
 import signal
 import time
+import logging
 
 # Import from third party library
 import spi
