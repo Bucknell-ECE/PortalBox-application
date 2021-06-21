@@ -129,7 +129,7 @@ class R2NeoPixelController(AbstractController):
 
 
 
-    def flash_display(self, flash_color, rate = 2):
+    def flash_display(self, flash_color, rate = 2.0):
         '''
         Flashes the display until self.flash_signal is set to False
         '''
@@ -140,7 +140,7 @@ class R2NeoPixelController(AbstractController):
             self.set_display_color(flash_color)
             if(self.flash_signal == False):
                 break
-            sleep(1/rate)
+            sleep(1.0/rate)
             if(self.flash_signal == False):
                 break
             self.set_display_color()

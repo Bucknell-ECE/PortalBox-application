@@ -276,7 +276,7 @@ class PortalBox:
             logging.info("PortalBox color_wipe failed")
 
 
-    def flash_display(self, color, rate = 2):
+    def flash_display(self, color, rate = 2.0):
         """Flash color across all display pixels multiple times. rate is in Hz"""
         self.wake_display()
         if self.display_controller:
