@@ -123,6 +123,7 @@ class AccessComplete(State):
         self.next_state(IdleNoCard, input_data)
 
     def on_enter(self, input_data):
+        self.service.box.set_display_color(self.service.settings["display"]["proxy_color"])
         self.service.db.log_access_completion(input_data["card_id"], self.service.equipment_id)
         self.service.box.set_equipment_power_on(False)
 
