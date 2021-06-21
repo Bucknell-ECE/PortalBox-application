@@ -43,6 +43,8 @@ class R2NeoPixelController(AbstractController):
         self._controller = serial.Serial(port=self.port, timeout=2)
         logging.debug("Finished creating serial port connection")
 
+        self.flash_signal = False
+
 
     def _transmit(self, command):
         self._controller.write(bytes(command, "ascii"))
@@ -105,6 +107,7 @@ class R2NeoPixelController(AbstractController):
         Set the entire strip to specified color.
         @param (color) color - the color to set defaults to LED's off
         '''
+        self.stop_flashing()
         command = "color {} {} {}\n".format(color[0], color[1], color[2])
         self._transmit(command)
         return self._receive()
@@ -138,7 +141,12 @@ class R2NeoPixelController(AbstractController):
             return self._receive()
 
     def flash_display_mine(self, flash_color, duration=2, flashes=5, end_color = BLACK):
-        for x in range(flashes):
+        self.flash_signal = True
+        while self.flash_signal:
             self.set_display_color(flash_color)
             sleep(duration/flashes)
             self.set_display_color()
+        logging.info("stopped flashing")
+
+    def stop_flashing(self):
+        self.flash_signal = False

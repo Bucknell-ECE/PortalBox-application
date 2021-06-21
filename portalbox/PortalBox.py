@@ -285,6 +285,8 @@ class PortalBox:
         else:
             logging.info("PortalBox flash_display failed")
 
+    
+
 
 
     def cleanup(self):

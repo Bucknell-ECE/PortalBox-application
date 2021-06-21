@@ -178,6 +178,7 @@ class RunningNoCard(State):
 
     def __call__(self, input_data):
         if(input_data["card_id"] > 0):
+
             if(input_data["card_type"] == CardType.PROXY_CARD):
                 self.next_state(RunningProxyCard, input_data)
             elif(input_data["card_type"] == CardType.TRAINING_CARD):
