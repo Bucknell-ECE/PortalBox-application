@@ -95,7 +95,7 @@ class Setup(State):
             self.timeout_delta = timedelta(minutes = self.service.timeout_minutes)
             self.grace_delta = timedelta(seconds = self.service.settings.getint("user_exp","grace_period"))
         except Exception as e:
-            logging.error("Unable to complete setup exception raised \n\t{}".format(e))
+            logging.error("Unable to complete setup exception raised: \n\t{}".format(e))
             self.next_state(Shutdown, input_data)
 
 
@@ -112,7 +112,6 @@ class Shutdown(State):
 class IdleNoCard(State):
 
     def __call__(self, input_data):
-        self.service.box.set_display_color(self.service.settings["display"]["sleep_color"])
         if(input_data["card_id"] > 0):
             self.next_state(IdleUnknownCard, input_data)
 
@@ -151,6 +150,7 @@ class RunningAuthUser(State):
     def __call__(self, input_data):
         if(input_data["card_id"] <= 0):
             self.next_state(RunningNoCard, input_data)
+
         if(self.timeout_expired()):
             self.next_state(RunningTimeout, input_data)
 
@@ -178,7 +178,7 @@ class RunningNoCard(State):
 
     def __call__(self, input_data):
         if(input_data["card_id"] > 0):
-
+            self.service.box.stop_flashing()
             if(input_data["card_type"] == CardType.PROXY_CARD):
                 self.next_state(RunningProxyCard, input_data)
             elif(input_data["card_type"] == CardType.TRAINING_CARD):
@@ -193,7 +193,8 @@ class RunningNoCard(State):
                 self.grace_expired() or
                 input_data["button_pressed"]
             ):
-            self.next_state(IdleNoCard, input_data)
+            self.service.box.stop_flashing()
+            self.next_state(AccessComplete, input_data)
 
     def on_enter(self, input_data):
         self.grace_start = datetime.now()
@@ -203,12 +204,15 @@ class RunningTimeout(State):
 
     def __call__(self, input_data):
         if(input_data["card_id"] <= 0):
-            self.next_state(IdleNoCard, input_data)
+            self.service.box.stop_flashing()
+            self.next_state(AccessComplete, input_data)
 
-        if(self.timeout_expired()):
+        if(self.grace_expired()):
+            self.service.box.stop_flashing()
             self.next_state(IdleAuthCard, input_data)
 
         if(input_data["button_pressed"]):
+            self.service.box.stop_flashing()
             if(input_data["card_type"] == CardType.PROXY_CARD):
                 self.next_state(RunningProxyCard, input_data)
             elif(input_data["card_type"] == CardType.TRAINING_CARD):
@@ -228,7 +232,7 @@ class IdleAuthCard(State):
 
     def __call__(self, input_data):
         if(input_data["card_id"] <= 0):
-            self.next_state(IdleNoCard, input_data)
+            self.next_state(AccessComplete, input_data)
 
     def on_enter(self, input_data):
         self.service.box.set_equipment_power_on(False)
