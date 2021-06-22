@@ -326,8 +326,9 @@ class PortalBox:
         self.beep_signal = True
         while(self.beep_signal):
             self.set_buzzer(True)
-            sleep(1.0/rate)
+            sleep(.5/rate)
             self.set_buzzer(False)
+            sleep(.5/rate)
         self.set_buzzer(False)
 
 
