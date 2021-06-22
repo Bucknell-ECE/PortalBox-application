@@ -154,7 +154,7 @@ class IdleUnknownCard(State):
             logging.info("Inserted a shutdown card, shutting the box down")
             self.next_state(Shutdown, input_data)
 
-        elif(input_data["user_is_authorized"]):
+        elif(input_data["user_is_authorized"] and input_data["card_type"] != CardType.USER_CARD):
             logging.info("Inserted card with id {}, is authorized for this equipment".format(input_data["card_id"]))
             self.next_state(RunningAuthUser, input_data)
 
