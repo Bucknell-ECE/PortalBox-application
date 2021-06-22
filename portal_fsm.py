@@ -205,6 +205,7 @@ class RunningNoCard(State):
     def __call__(self, input_data):
         if(input_data["card_id"] > 0):
             self.service.box.stop_flashing()
+            self.service.box.stop_beeping()
             if(input_data["card_type"] == CardType.PROXY_CARD):
                 self.next_state(RunningProxyCard, input_data)
             elif(input_data["card_type"] == CardType.TRAINING_CARD):
@@ -220,12 +221,14 @@ class RunningNoCard(State):
                 input_data["button_pressed"]
             ):
             self.service.box.stop_flashing()
+            self.service.box.stop_beeping()
             self.next_state(AccessComplete, input_data)
 
     def on_enter(self, input_data):
         logging.info("Grace period started")
         self.grace_start = datetime.now()
         self.service.box.flash_display(self.service.settings["display"]["no_card_grace_color"],3.0)
+        self.service.box.start_beeping(3.0)
 
 class RunningTimeout(State):
     """

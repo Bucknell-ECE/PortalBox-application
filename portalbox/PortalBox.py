@@ -291,7 +291,7 @@ class PortalBox:
             logging.info("PortalBox flash_display failed")
 
     def stop_flashing(self):
-        "Stops the flashing thread"
+        """Stops the flashing thread"""
         if self.display_controller:
             self.display_controller.flash_signal = False
             while("flashing_thread" in [t.getName() for t in threading.enumerate()]):
@@ -299,6 +299,36 @@ class PortalBox:
         else:
             logging.info("PortalBox stop_flashing failed")
 
+    def start_beeping(self, rate = 2.0):
+        """Starts beeping at the specified rate in Hz"""
+        if(self.buzzer_enabled):
+            beep_thread = threading.Thread(
+                target = self.display_controller.flash_display,
+                args = (bytes.fromhex(color), rate,),
+                name = "beep_thread",
+                daemon = True
+             )
+            beep_thread.start()
+        else:
+            return
+
+    def stop_beeping(self):
+        """Stops the flashing thread"""
+        if self.buzzer_enabled:
+            self.beep_signal = False
+            while("beep_thread" in [t.getName() for t in threading.enumerate()]):
+                pass
+        else:
+            logging.info("PortalBox stop_beeping failed")
+
+    def beep(self, rate = 2.0):
+        """Beeps at the specified rate in Hz"""
+        self.beep_signal = True
+        while(self.beep_signal)
+            self.set_buzzer(True)
+            sleep(1.0/rate)
+            self.set_buzzer(False)
+        self.set_buzzer(False)
 
 
     def cleanup(self):
