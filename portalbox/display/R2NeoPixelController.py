@@ -108,6 +108,7 @@ class R2NeoPixelController(AbstractController):
         @param (color) color - the color to set defaults to LED's off
         '''
         command = "color {} {} {}\n".format(color[0], color[1], color[2])
+        logging.info(command)
         self._transmit(command)
         return self._receive()
 
@@ -134,6 +135,7 @@ class R2NeoPixelController(AbstractController):
         '''
         self.flash_signal = True
         while self.flash_signal:
+            logging.info(flash_color)
             self.set_display_color(flash_color)
             if(self.flash_signal == False):
                 break
