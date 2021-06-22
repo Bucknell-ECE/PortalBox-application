@@ -180,8 +180,10 @@ class RunningAuthUser(State):
         self.training_id = 0
         self.service.box.set_equipment_power_on(True)
         self.service.box.set_display_color(self.service.settings["display"]["auth_color"])
+        self.service.box.beep_once()
         self.auth_user_id = input_data["card_id"]
         self.service.db.log_access_attempt(input_data["card_id"], self.service.equipment_id, True)
+
 
 
 class IdleUnauthCard(State):
@@ -237,14 +239,17 @@ class RunningTimeout(State):
     def __call__(self, input_data):
         if(input_data["card_id"] <= 0):
             self.service.box.stop_flashing()
+            self.service.box.stop_beeping()
             self.next_state(AccessComplete, input_data)
 
         if(self.grace_expired()):
             self.service.box.stop_flashing()
+            self.service.box.stop_beeping()
             self.next_state(IdleAuthCard, input_data)
 
         if(input_data["button_pressed"]):
             self.service.box.stop_flashing()
+            self.service.box.stop_beeping()
             if(input_data["card_type"] == CardType.PROXY_CARD):
                 self.next_state(RunningProxyCard, input_data)
             elif(input_data["card_type"] == CardType.TRAINING_CARD):
@@ -289,6 +294,7 @@ class RunningProxyCard(State):
         self.training_id = 0
         self.service.box.set_equipment_power_on(True)
         self.service.box.set_display_color(self.service.settings["display"]["proxy_color"])
+        self.service.box.beep_once()
         self.proxy_id = input_data["card_id"]
         self.service.db.log_access_attempt(input_data["card_id"], self.service.equipment_id, True)
 
@@ -306,5 +312,6 @@ class RunningTrainingCard(State):
         self.proxy_id = 0
         self.service.box.set_equipment_power_on(True)
         self.service.box.set_display_color(self.service.settings["display"]["training_color"])
+        self.service.box.beep_once()
         self.training_id = input_data["card_id"]
         self.service.db.log_access_attempt(input_data["card_id"], self.service.equipment_id, True)

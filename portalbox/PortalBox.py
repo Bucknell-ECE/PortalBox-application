@@ -331,6 +331,12 @@ class PortalBox:
             sleep(1/rate)
         self.set_buzzer(False)
 
+    def beep_once(self):
+        "beeps the buzzer once"
+        self.set_buzzer(True)
+        sleep(.2)
+        self.set_buzzer(False)        
+
 
     def cleanup(self):
         logging.info("PortalBox.cleanup() starts")
