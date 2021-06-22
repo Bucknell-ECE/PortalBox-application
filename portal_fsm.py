@@ -227,8 +227,8 @@ class RunningNoCard(State):
     def on_enter(self, input_data):
         logging.info("Grace period started")
         self.grace_start = datetime.now()
-        self.service.box.flash_display(self.service.settings["display"]["no_card_grace_color"],3.0)
-        self.service.box.start_beeping(3.0)
+        self.service.box.flash_display(self.service.settings["display"]["no_card_grace_color"],1.0)
+        self.service.box.start_beeping(1.0)
 
 class RunningTimeout(State):
     """
@@ -258,7 +258,8 @@ class RunningTimeout(State):
     def on_enter(self, input_data):
         logging.info("Machine timout, grace period started")
         self.grace_start = datetime.now()
-        self.service.box.flash_display(self.service.settings["display"]["grace_timeout_color"],3)
+        self.service.box.flash_display(self.service.settings["display"]["grace_timeout_color"],1.0)
+        self.service.box.start_beeping(1.0)
 
 class IdleAuthCard(State):
     """
