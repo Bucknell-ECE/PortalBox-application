@@ -324,7 +324,7 @@ class PortalBox:
     def beep(self, rate = 2.0):
         """Beeps at the specified rate in Hz"""
         self.beep_signal = True
-        while(self.beep_signal)
+        while(self.beep_signal):
             self.set_buzzer(True)
             sleep(1.0/rate)
             self.set_buzzer(False)
