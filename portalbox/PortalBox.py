@@ -304,7 +304,7 @@ class PortalBox:
         if(self.buzzer_enabled):
             beep_thread = threading.Thread(
                 target = self.display_controller.flash_display,
-                args = (bytes.fromhex(color), rate,),
+                args = (rate,),
                 name = "beep_thread",
                 daemon = True
              )
