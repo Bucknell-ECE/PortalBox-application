@@ -18,6 +18,10 @@
     of the LEDs
   - The beeper is activated for a short time when the equipment is being
     turned on, as a redundant indicator to the green display
+
+2021-06-26 Version James Howe
+  - Moved most functionality into portal_fsm.py and cleaned up most functions
+  - Moved all color defintions into config 
 """
 
 

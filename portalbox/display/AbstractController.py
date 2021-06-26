@@ -1,4 +1,4 @@
-BLACK = b'\x00\x00\x00'
+BLACK = "00 00 00"
 
 _BAD_COLOR_VALUE_ERROR_MSG = ("Colors are expected to be a bytes object of "
                                 "length three (3) specifing the r,g and b "

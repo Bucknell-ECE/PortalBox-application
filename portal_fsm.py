@@ -2,6 +2,9 @@
 The finite state machine for the portal box service.
 
 2021-05-07 KJHass
+    -Created skeleton code for the class
+2021-06-26 James Howe
+    -Finished the rest of the class
 
 Inspired by @cmcginty's answer at
 https://stackoverflow.com/questions/2101961/python-state-machine-design
@@ -137,7 +140,7 @@ class AccessComplete(State):
 
     def on_enter(self, input_data):
         logging.info("Usage complete, logging usage and turning off machine")
-        self.service.db.log_access_completion(input_data["card_id"], self.service.equipment_id)
+        self.service.db.log_access_completion(self.auth_user_id, self.service.equipment_id)
         self.service.box.set_equipment_power_on(False)
         self.next_state(IdleNoCard, input_data)
 
