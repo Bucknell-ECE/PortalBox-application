@@ -180,12 +180,14 @@ class RunningUnknownCard(State):
             self.training_id <= 0
           ):
             self.next_state(RunningProxyCard, input_data)
-        elif(input_data["card_type"] == CardType.USER_CARD):
-            if(input_data["card_id"] == self.auth_user_id):
-                self.next_state(RunningAuthUser, input_data)
-            else:
-                if(self.user_authority_level >= 2 and self.proxy_id <= 0):
-                    self.next_state(RunningTrainingCard, input_data)
+        elif(input_data["card_id"] == self.auth_user_id):
+            self.next_state(RunningAuthUser, input_data)
+        elif(
+            input_data["card_type"] == CardType.USER_CARD and
+            self.user_authority_level >= 2 and
+            self.proxy_id <= 0
+            ):
+            self.next_state(RunningTrainingCard, input_data)
         else:
             self.next_state(IdleUnknownCard, input_data)
 
