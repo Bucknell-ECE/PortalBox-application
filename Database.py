@@ -527,4 +527,4 @@ class Database:
         except mysql.connector.Error as err:
             logging.error("{}".format(err))
 
-        return access_level > 1
+        return access_level
