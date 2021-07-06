@@ -526,5 +526,5 @@ class Database:
                 connection.close()
         except mysql.connector.Error as err:
             logging.error("{}".format(err))
-
+        logging.info(access_level)
         return access_level
