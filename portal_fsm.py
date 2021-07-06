@@ -142,6 +142,10 @@ class AccessComplete(State):
         logging.info("Usage complete, logging usage and turning off machine")
         self.service.db.log_access_completion(self.auth_user_id, self.service.equipment_id)
         self.service.box.set_equipment_power_on(False)
+        self.proxy_id = 0
+        self.training_id = 0
+        self.auth_user_id = 0
+        self.user_authority_level = 0
         self.next_state(IdleNoCard, input_data)
 
 class IdleUnknownCard(State):
@@ -164,6 +168,28 @@ class IdleUnknownCard(State):
         else:
             logging.info("Inserted card with id {}, is not authorized for this equipment".format(input_data["card_id"]))
             self.next_state(IdleUnauthCard, input_data)
+class RunningUnknownCard(State):
+    """
+    A Card has been read from the no card grace period
+    """
+    def __call__(self, input_data):
+        self.service.box.stop_flashing()
+        self.service.box.stop_beeping()
+
+        #Proxy card, AND not coming from training mode
+        if(
+            input_data["card_type"] == CardType.PROXY_CARD and
+            self.training_id <= 0
+          ):
+            self.next_state(RunningProxyCard, input_data)
+        elif(input_data["card_type"] == CardType.USER_CARD):
+            if(input_data["card_id"] == self.auth_user_id):
+                self.next_state(RunningAuthUser, input_data)
+            else:
+                if(self.user_authority_level >= 2 and self.proxy_id <= 0):
+                    self.next_state(RunningTrainingCard, input_data)
+        else:
+            self.next_state(IdleUnknownCard, input_data)
 
 class RunningAuthUser(State):
     """
@@ -185,6 +211,7 @@ class RunningAuthUser(State):
         self.service.box.set_display_color(self.service.settings["display"]["auth_color"])
         self.service.box.beep_once()
         self.auth_user_id = input_data["card_id"]
+        self.user_authority_level = input_data["user_authority_level"]
         self.service.db.log_access_attempt(input_data["card_id"], self.service.equipment_id, True)
 
 
@@ -208,23 +235,10 @@ class RunningNoCard(State):
         period expires, or a button is pressed
     """
     def __call__(self, input_data):
+        #Card detected
         if(input_data["card_id"] > 0):
-            self.service.box.stop_flashing()
-            self.service.box.stop_beeping()
-            if(input_data["card_type"] == CardType.PROXY_CARD):
-                self.next_state(RunningProxyCard, input_data)
-            elif(input_data["card_type"] == CardType.TRAINING_CARD):
-                self.next_state(RunningTrainingCard, input_data)
-            elif(input_data["card_type"] == CardType.USER_CARD):
-                if(input_data["card_id"] == self.auth_user_id):
-                    self.next_state(RunningAuthUser, input_data)
-            else:
-                self.next_state(IdleUnknownCard, input_data)
-
-        elif(
-                self.grace_expired() or
-                input_data["button_pressed"]
-            ):
+            self.next_state(RunningUnknownCard, input_data)
+        elif(self.grace_expired() or input_data["button_pressed"]):
             self.service.box.stop_flashing()
             self.service.box.stop_beeping()
             self.next_state(AccessComplete, input_data)
@@ -251,17 +265,7 @@ class RunningTimeout(State):
             self.next_state(IdleAuthCard, input_data)
 
         if(input_data["button_pressed"]):
-            self.service.box.stop_flashing()
-            self.service.box.stop_beeping()
-            if(input_data["card_type"] == CardType.PROXY_CARD):
-                self.next_state(RunningProxyCard, input_data)
-            elif(input_data["card_type"] == CardType.TRAINING_CARD):
-                self.next_state(RunningTrainingCard, input_data)
-            elif(input_data["card_type"] == CardType.USER_CARD):
-                if(input_data["card_id"] == self.auth_user_id):
-                    self.next_state(RunningAuthUser, input_data)
-            else:
-                self.next_state(IdleUnknownCard, input_data)
+            self.next_state(RunningUnknownCard, input_data)
 
     def on_enter(self, input_data):
         logging.info("Machine timout, grace period started")
@@ -316,5 +320,7 @@ class RunningTrainingCard(State):
         self.service.box.set_equipment_power_on(True)
         self.service.box.set_display_color(self.service.settings["display"]["training_color"])
         self.service.box.beep_once()
-        self.training_id = input_data["card_id"]
+        #updates the user ID for checking out, and updates the authority level so that they can't "train" others
+        self.auth_user_id = input_data["card_id"]
+        self.user_authority_level = input_data["user_authority_level"]
         self.service.db.log_access_attempt(input_data["card_id"], self.service.equipment_id, True)
