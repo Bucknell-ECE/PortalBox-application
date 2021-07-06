@@ -173,8 +173,6 @@ class RunningUnknownCard(State):
     A Card has been read from the no card grace period
     """
     def __call__(self, input_data):
-        self.service.box.stop_flashing()
-        self.service.box.stop_beeping()
 
         #Proxy card, AND not coming from training mode
         if(
@@ -237,8 +235,10 @@ class RunningNoCard(State):
     def __call__(self, input_data):
         #Card detected
         if(input_data["card_id"] > 0):
+            self.service.box.stop_flashing()
+            self.service.box.stop_beeping()
             self.next_state(RunningUnknownCard, input_data)
-        elif(self.grace_expired() or input_data["button_pressed"]):
+        if(self.grace_expired() or input_data["button_pressed"]):
             self.service.box.stop_flashing()
             self.service.box.stop_beeping()
             self.next_state(AccessComplete, input_data)
@@ -265,6 +265,8 @@ class RunningTimeout(State):
             self.next_state(IdleAuthCard, input_data)
 
         if(input_data["button_pressed"]):
+            self.service.box.stop_flashing()
+            self.service.box.stop_beeping()
             self.next_state(RunningUnknownCard, input_data)
 
     def on_enter(self, input_data):
