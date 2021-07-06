@@ -299,10 +299,10 @@ class RunningProxyCard(State):
 
     def on_enter(self, input_data):
         self.training_id = 0
+        self.proxy_id = input_data["card_id"]
         self.service.box.set_equipment_power_on(True)
         self.service.box.set_display_color(self.service.settings["display"]["proxy_color"])
         self.service.box.beep_once()
-        self.proxy_id = input_data["card_id"]
         self.service.db.log_access_attempt(input_data["card_id"], self.service.equipment_id, True)
 
 class RunningTrainingCard(State):
@@ -317,10 +317,8 @@ class RunningTrainingCard(State):
 
     def on_enter(self, input_data):
         self.proxy_id = 0
+        self.training_id = input_data["card_id"]
         self.service.box.set_equipment_power_on(True)
         self.service.box.set_display_color(self.service.settings["display"]["training_color"])
         self.service.box.beep_once()
-        #updates the user ID for checking out, and updates the authority level so that they can't "train" others
-        self.auth_user_id = input_data["card_id"]
-        self.user_authority_level = input_data["user_authority_level"]
         self.service.db.log_access_attempt(input_data["card_id"], self.service.equipment_id, True)
