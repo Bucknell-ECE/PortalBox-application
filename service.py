@@ -21,7 +21,7 @@
 
 2021-06-26 Version James Howe
   - Moved most functionality into portal_fsm.py and cleaned up most functions
-  - Moved all color defintions into config 
+  - Moved all color defintions into config
 """
 
 
@@ -49,6 +49,7 @@ input_data = {
     "card_id": 0,
     "user_is_authorized": False,
     "card_type": "none",
+    "user_authority_level":0,
     "button_pressed": False,
 }
 
@@ -142,6 +143,7 @@ class PortalBoxApplication():
                 "user_is_authorized": (boolean) Whether or not the user is authorized,
                     for the current machine
                 "card_type": (CardType enum) the type of card,
+                "user_authority_level": (int) The authority of the user, 1 for normal user, 2 for trainer, 3 for admin
                 "button_pressed": (boolean) whether or not the button has been
                     pressed since the last time it was checked
         """
@@ -158,6 +160,7 @@ class PortalBoxApplication():
                 "card_id": card_id,
                 "user_is_authorized": self.get_user_auths(card_id),
                 "card_type": self.db.get_card_type(card_id),
+                "user_authority_level": self.db.is_user_trainer(card_id),
                 "button_pressed": self.box.has_button_been_pressed()
             }
         #If no card is present, just update the button
@@ -166,6 +169,7 @@ class PortalBoxApplication():
                 "card_id": -1,
                 "user_is_authorized": False,
                 "card_type": CardType.INVALID_CARD,
+                "user_authority_level": 0,
                 "button_pressed": self.box.has_button_been_pressed()
             }
         #Else just use the old data
