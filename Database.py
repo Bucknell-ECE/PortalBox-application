@@ -514,8 +514,7 @@ class Database:
             else:
                 connection = self._connect()
 
-            query = ("SELECT u.management_portal_access_level_id FROM users_x_cards AS c "
-                "JOIN users AS u ON u.id = c.user_id WHERE c.card_id = %s")
+            query = ("SELECT role_id FROM users_x_cards AS c JOIN users AS u ON u.id = c.user_id WHERE c.card_id = %s")
 
             cursor = connection.cursor()
             cursor.execute(query, (id,))
@@ -526,5 +525,6 @@ class Database:
                 connection.close()
         except mysql.connector.Error as err:
             logging.error("{}".format(err))
-
+        if( access_level is None):
+            return 0
         return access_level[0]

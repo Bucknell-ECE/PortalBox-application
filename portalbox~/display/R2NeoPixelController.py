@@ -43,6 +43,8 @@ class R2NeoPixelController(AbstractController):
         self._controller = serial.Serial(port=self.port, timeout=2)
         logging.debug("Finished creating serial port connection")
 
+        self.flash_signal = False
+
 
     def _transmit(self, command):
         self._controller.write(bytes(command, "ascii"))
@@ -85,6 +87,13 @@ class R2NeoPixelController(AbstractController):
         self._transmit(command)
         return self._receive()
 
+    def pulse_display(self, color):
+        '''
+        Pulses the display the specified color
+        '''
+        command = "pulse {} {} {}\n".format(color[0], color[1], color[2])
+        self._transmit(command)
+        return self._receive()
 
     def wake_display(self):
         '''
@@ -117,15 +126,24 @@ class R2NeoPixelController(AbstractController):
         return self._receive()
 
 
-    def flash_display(self, flash_color, duration, flashes=5, end_color = BLACK):
-        """Flash color across all display pixels multiple times."""
-        if duration > int(self._controller.timeout * 1000):
-            self._controller.timeout = duration / 1000
 
-        command = "blink {} {} {} {}\n".format(flash_color[0], flash_color[1], flash_color[2], duration)
-        self._transmit(command)
-        success = self._receive()
-        if success:
-            command = "color {} {} {}\n".format(end_color[0], end_color[1], end_color[2])
-            self._transmit(command)
-            return self._receive()
+
+    def flash_display(self, flash_color, rate = 2.0):
+        '''
+        Flashes the display until self.flash_signal is set to False
+        '''
+        self.flash_signal = True
+        while self.flash_signal:
+            self.set_display_color(flash_color)
+            if(self.flash_signal == False):
+                break
+            sleep(1.0/rate)
+            if(self.flash_signal == False):
+                break
+            self.set_display_color()
+
+    def stop_flashing(self):
+        '''
+        Stops the display from flashing
+        '''
+        self.flash_signal = False

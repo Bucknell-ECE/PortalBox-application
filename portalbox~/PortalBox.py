@@ -3,13 +3,6 @@
 # PortalBox.py acts as a hardware abstraction layer exposing a somewhat
 # simple API to the hardware
 """
-2021-06-09 Version   KJHass
-  - Supports either Neopixels or DotStars
-
-2021-05-12 Version   KJHass
-  - read card twice before returning card id number or -1
-  - don't read RFID reader version for debugging, it doesn't help
-
 2021-03-25 Version   KJHass
   - imports os and periodically writes to files in /tmp to feed the watchdog
   - defines colors RED and YELLOW for display if RFID hangs
@@ -25,22 +18,21 @@
 # from standard library
 import os
 import logging
-from time import sleep
 from time import sleep, time_ns
 import threading
 
 # Our libraries
+from .MFRC522 import MFRC522 # this is a modified version of https://github.com/mxgxw/MFRC522-python
+                            # bundling it is sort of a license violation (can't change license)
+                            # however the library has issues and is in need of replacement
 from .display.AbstractController import BLACK
 
 # third party
 import RPi.GPIO as GPIO
-from mfrc522 import MFRC522
+
 
 # Constants defining how peripherals are connected
-#FIXME Add RPi4?
 REVISION_ID_RASPBERRY_PI_0_W = "9000c1"
-#FIXME Get this from config file
-LEDS = "DOTSTARS"
 
 GPIO_INTERLOCK_PIN = 11
 GPIO_BUZZER_PIN = 33
@@ -48,9 +40,9 @@ GPIO_BUTTON_PIN = 35
 GPIO_SOLID_STATE_RELAY_PIN = 37
 GPIO_RFID_NRST_PIN = 13
 
-#FIXME Get from config file
+
 RED = b'\xFF\x00\x00'
-YELLOW = b'\xFF\x80\x00'
+YELLOW = b'\xFF\xFF\x00'
 
 # Utility functions
 def get_revision():
@@ -76,40 +68,34 @@ class PortalBox:
         GPIO.setwarnings(False)
 
         ## GPIO pin assignments and initializations
+        GPIO.setup(GPIO_RFID_NRST_PIN, GPIO.OUT)
+        GPIO.output(GPIO_RFID_NRST_PIN, 0)       # Reset RFID
+
         GPIO.setup(GPIO_INTERLOCK_PIN, GPIO.OUT)
         GPIO.setup(GPIO_BUZZER_PIN, GPIO.OUT)
         GPIO.setup(GPIO_SOLID_STATE_RELAY_PIN, GPIO.OUT)
 
-        # Reset the RFID card
-        GPIO.setup(GPIO_RFID_NRST_PIN, GPIO.OUT)
-        GPIO.output(GPIO_RFID_NRST_PIN, False)
-
         GPIO.setup(GPIO_BUTTON_PIN, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
         GPIO.add_event_detect(GPIO_BUTTON_PIN, GPIO.RISING)
+
+        GPIO.output(GPIO_RFID_NRST_PIN, 1)       # Deassert RFID reset
 
         self.set_equipment_power_on(False)
 
         # Create display controller
-        if LEDS == "DOTSTARS":
-            logging.debug("Creating DotStar display controller")
-            from .display.DotstarController import DotstarController
-            self.display_controller = DotstarController()
-        elif LEDS == "NEOPIXELS":
-            logging.debug("Creating Neopixel display controller")
+        if self.is_pi_zero_w:
+            logging.debug("Creating display controller")
             from .display.R2NeoPixelController import R2NeoPixelController
-            self.display_controller = R2NeoPixelController()
+            self.display_controller = R2NeoPixelController(settings)
         else:
-            logging.info("No display driver!")
+            logging.info("Did not connect to display driver, display methods will be unavailable")
             self.display_controller = None
-            
+
         # Get buzzer enabled from settings
         self.buzzer_enabled = True
         if "buzzer_enabled" in settings["display"]:
             if settings["display"]["buzzer_enabled"].lower() in ("no", "false", "0"):
                 self.buzzer_enabled = False
-        
-        # Deassert NRST
-        GPIO.output(GPIO_RFID_NRST_PIN, True)
 
         # Create a proxy for the RFID card reader
         logging.debug("Creating RFID reader")
@@ -137,7 +123,6 @@ class PortalBox:
         ## Turn off power to SSR
         GPIO.output(GPIO_SOLID_STATE_RELAY_PIN, state)
         ## Open interlock
-        #FIXME  Why? What do we do for Pi4?
         if self.is_pi_zero_w:
             GPIO.output(GPIO_INTERLOCK_PIN, state)
         else:
@@ -149,7 +134,10 @@ class PortalBox:
         :param state: True -> Buzzer On; False -> Buzzer Off
         :return: None
         '''
-        GPIO.output(GPIO_BUZZER_PIN, state)
+        if(self.buzzer_enabled):
+            GPIO.output(GPIO_BUZZER_PIN, state)
+        else:
+            return
 
 
     def get_button_state(self):
@@ -177,6 +165,14 @@ class PortalBox:
         '''
         rfid_hang = False
 
+        # Version should be 0x92 for Version 2 MFRC522
+        #                   0x91 for Version 1
+        version = self.RFIDReader.Read_MFRC522(MFRC522.VersionReg)
+        version = version & 0xFC
+        if version != 0x90:
+            logging.info("MFRC522 communication FAIL")
+            rfid_hang = True
+
         # These three registers appear to change to specific values if the
         # RFID module hangs
         reglist = [17, 20, 21]
@@ -192,7 +188,7 @@ class PortalBox:
                 self.outlist[reg] = regval
 
        # If the RFID module hangs then we need to restart the portal-box
-       # service. This is an infinite loop...the watchdog timer should 
+       # service. This is an infinite loop...the watchdog timer should
        # detect this and restart the service. Meanwhile, we beep and an
        # flash a red and yellow display
         while rfid_hang:
@@ -203,24 +199,24 @@ class PortalBox:
            self.set_display_color(YELLOW)
            sleep(10)
 
-        # Scan for card...twice before giving up
-        for attempts in range(2):
-            (status, TagType) = self.RFIDReader.MFRC522_Request(MFRC522.PICC_REQIDL)
+        # Scan for cards
+        (status, TagType) = self.RFIDReader.MFRC522_Request(MFRC522.PICC_REQIDL)
+
+        if MFRC522.MI_OK == status:
+            # Get the UID of the card
+            #logging.debug("MFRC522 request status, uid")
+            (status, uid) = self.RFIDReader.MFRC522_Anticoll()
+            #logging.debug("MFRC522 Request returned: %s, %s", status, uid)
 
             if MFRC522.MI_OK == status:
-                # Get the UID of the card
-                (status, uid) = self.RFIDReader.MFRC522_Anticoll()
-
-                if MFRC522.MI_OK == status:
-                    # We have the UID, generate unsigned integer
-                    # uid is a MSB order byte array of theoretically 4 bytes
-                    result = 0
-                    for i in range(4):
-                        result += (uid[i] << (8 * (3 - i)))
-                    # If we found a valid card ID, return it
-                    if result > 0:
-                        return result
-
+                # We have the UID, generate unsigned integer
+                # uid is a MSB order byte array of theoretically 4 bytes
+                result = 0
+                for i in range(4):
+                    result += (uid[i] << (8 * (3 - i)))
+                return result
+            logging.info("MFRC522 request status, MI_OK failed")
+            return -1
         return -1
 
     def wake_display(self):
@@ -229,6 +225,16 @@ class PortalBox:
         else:
             logging.info("PortalBox wake_display failed")
 
+    def pulse_display(self, color = BLACK):
+        '''
+        Pulses the display with the specified color
+        @param (bytes len 3) color - the color to set. Defaults to LED's off
+        '''
+
+        if self.display_controller:
+            self.display_controller.pulse_display(bytes.fromhex(color))
+        else:
+            logging.info("PortalBox pulse_display_color failed")
 
     def sleep_display(self):
         '''
@@ -240,6 +246,8 @@ class PortalBox:
             self.display_controller.sleep_display()
         else:
             logging.info("PortalBox sleep_display failed")
+
+
 
 
     def set_display_color(self, color = BLACK):
@@ -263,19 +271,12 @@ class PortalBox:
         '''
         self.wake_display()
         if self.display_controller:
-            self.display_controller.set_display_color_wipe(color, duration)
+            self.display_controller.set_display_color_wipe(bytes.fromhex(color), duration)
         else:
             logging.info("PortalBox color_wipe failed")
 
-    def flash_display(self, color, duration=1000, flashes=5, end_color = BLACK):
-        """Flash color across all display pixels multiple times."""
-        self.wake_display()
-        if self.display_controller:
-            logging.info("Should be flashing")
-            self.display_controller.flash_display(bytes.fromhex(color), duration, flashes, end_color)
-        else:
-            logging.info("PortalBox flash_display failed")
-    def flash_display_old(self, color, rate = 2.0):
+
+    def flash_display(self, color, rate = 2.0):
         """Flash color across all display pixels multiple times. rate is in Hz"""
         self.wake_display()
         if self.display_controller:
@@ -329,12 +330,13 @@ class PortalBox:
             self.set_buzzer(False)
             sleep(1/rate)
         self.set_buzzer(False)
-            
+
     def beep_once(self):
         "beeps the buzzer once"
         self.set_buzzer(True)
         sleep(.2)
-        self.set_buzzer(False)   
+        self.set_buzzer(False)        
+
 
     def cleanup(self):
         logging.info("PortalBox.cleanup() starts")
