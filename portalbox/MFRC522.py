@@ -1,5 +1,10 @@
 from __future__ import print_function
 
+"""
+2021-06-23 KJH
+  - Fixed predicate to exit loop when looking for card
+
+"""
 # This code may have been taken from: https://github.com/mxgxw/MFRC522-python
 # sometime before 2018 when the repo gained licensing info. It has diverged
 # some since then. In particulare we use a newer version of spi
@@ -192,7 +197,8 @@ class MFRC522:
         while True:
             n = self.Read_MFRC522(self.CommIrqReg)
             i = i - 1
-            if ~((i!=0) and ~(n&0x01) and ~(n&waitIRq)):
+#            if ~((i!=0) and ~(n&0x01) and ~(n&waitIRq)):
+            if not ((i != 0) and not (n & 0x01) and not (n & waitIRq)):
                 break
 
         self.ClearBitMask(self.BitFramingReg, 0x80)
