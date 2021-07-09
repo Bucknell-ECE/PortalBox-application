@@ -1,6 +1,8 @@
 #!python3
 
 """
+  2021-07-09 Version   KJHass
+    - Fixed bug in is_user_trainer() if can't access database
   2021-04-04 Version   KJHass
     - Get "requires_training" and "requires_payment" just once rather than
       every time a card is checked
@@ -502,6 +504,7 @@ class Database:
         @return, True or False
         '''
         connection = self._connection
+        access_level = (-1, -1)
 
         try:
             if self.use_persistent_connection:
