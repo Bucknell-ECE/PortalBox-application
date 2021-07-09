@@ -34,7 +34,7 @@ from .display.AbstractController import BLACK
 
 # third party
 import RPi.GPIO as GPIO
-from mfrc522 import MFRC522
+from .MFRC522 import MFRC522
 
 # Constants defining how peripherals are connected
 #FIXME Add RPi4?
@@ -101,13 +101,13 @@ class PortalBox:
         else:
             logging.info("No display driver!")
             self.display_controller = None
-            
+
         # Get buzzer enabled from settings
         self.buzzer_enabled = True
         if "buzzer_enabled" in settings["display"]:
             if settings["display"]["buzzer_enabled"].lower() in ("no", "false", "0"):
                 self.buzzer_enabled = False
-        
+
         # Deassert NRST
         GPIO.output(GPIO_RFID_NRST_PIN, True)
 
@@ -192,7 +192,7 @@ class PortalBox:
                 self.outlist[reg] = regval
 
        # If the RFID module hangs then we need to restart the portal-box
-       # service. This is an infinite loop...the watchdog timer should 
+       # service. This is an infinite loop...the watchdog timer should
        # detect this and restart the service. Meanwhile, we beep and an
        # flash a red and yellow display
         while rfid_hang:
@@ -329,12 +329,12 @@ class PortalBox:
             self.set_buzzer(False)
             sleep(1/rate)
         self.set_buzzer(False)
-            
+
     def beep_once(self):
         "beeps the buzzer once"
         self.set_buzzer(True)
         sleep(.2)
-        self.set_buzzer(False)   
+        self.set_buzzer(False)
 
     def cleanup(self):
         logging.info("PortalBox.cleanup() starts")
