@@ -45,7 +45,7 @@ class R2NeoPixelController(AbstractController):
 
 
     def _transmit(self, command):
-        self._controller.write(bytes(command, "ascii"))
+        self._controlle r.write(bytes(command, "ascii"))
 
 
     def _receive(self):
@@ -125,6 +125,7 @@ class R2NeoPixelController(AbstractController):
         command = "blink {} {} {} {}\n".format(flash_color[0], flash_color[1], flash_color[2], duration)
         self._transmit(command)
         success = self._receive()
+        logging.debug(self._receive())
         if success:
             command = "color {} {} {}\n".format(end_color[0], end_color[1], end_color[2])
             self._transmit(command)
