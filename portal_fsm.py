@@ -186,12 +186,14 @@ class RunningUnknownCard(State):
         #User card, AND
         #The box was intially authrized by a trainer AND
         #Not coming from proxy mode AND
-        #Not coming from training mode, OR the card is the same one that was being trained 
+        #Not coming from training mode, OR the card is the same one that was being trained AND
+        #An unathorized user 
         elif(
             input_data["card_type"] == CardType.USER_CARD and
             self.user_authority_level >= 2 and
             self.proxy_id <= 0 and
-            (self.training_id <= 0 or self.training_id == input_data["card_id"])
+            (self.training_id <= 0 or self.training_id == input_data["card_id"]) and
+            self.service.get_user_auths(input_data["card_id"])
             ):
             self.next_state(RunningTrainingCard, input_data)
         else:
