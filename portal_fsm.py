@@ -112,7 +112,6 @@ class Shutdown(State):
     Shuts down the box
     """
     def __call__(self, input_data):
-        self.service.box.stop_flashing()
         self.service.box.set_equipment_power_on(False)
         self.service.box.set_display_color()# Turns off the display
         self.service.shutdown() #logging the shutdown is done in this method
