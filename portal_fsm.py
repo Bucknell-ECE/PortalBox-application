@@ -187,7 +187,7 @@ class RunningUnknownCard(State):
         #The box was intially authrized by a trainer AND
         #Not coming from proxy mode AND
         #Not coming from training mode, OR the card is the same one that was being trained AND
-        #An unathorized user 
+        #An unathorized user
         elif(
             input_data["card_type"] == CardType.USER_CARD and
             self.user_authority_level >= 2 and
@@ -256,7 +256,7 @@ class RunningNoCard(State):
     def on_enter(self, input_data):
         logging.info("Grace period started")
         self.grace_start = datetime.now()
-        self.service.box.flash_display(self.service.settings["display"]["no_card_grace_color"],1.0)
+        self.service.box.flash_display(self.service.settings["display"]["no_card_grace_color"],self.grace_delta.seconds*1000)
         self.service.box.start_beeping(1.0)
 
 class RunningTimeout(State):
