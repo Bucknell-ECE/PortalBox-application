@@ -289,10 +289,11 @@ class PortalBox:
     def flash_thread(self, color, duration, flashes, end_color):
         """Flash color across all display pixels multiple times. rate is in Hz"""
         self.flash_signal = True
+        logging.debug("right before while loop")
         while(self.flash_signal and thread_time() <= duration):
-            self.set_display_color(bytes.fromhex(color))
+            self.display_controller.set_display_color(bytes.fromhex(color))
             sleep(0.1)
-            self.set_display_color(bytes.fromhex(end_color))
+            self.display_controller.set_display_color(bytes.fromhex(end_color))
             if(not self.flash_signal):
                 break
             sleep(duration/flashes)
