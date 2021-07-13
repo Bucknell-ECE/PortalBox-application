@@ -274,10 +274,11 @@ class PortalBox:
     def flash_display(self, color, duration=2.0, flashes=5, end_color = BLACK):
         """Flash color across all display pixels multiple times."""
         self.wake_display()
+        logging.debug("right before thread")
         if self.display_controller:
             flash_thread = threading.Thread(
                 target = self.flash_thread,
-                args = (color, duration, flashes, end_color),
+                args = (color, duration, flashes, end_color,),
                 name = "flashing_thread",
                 daemon = True
              )
