@@ -293,8 +293,10 @@ class PortalBox:
         self.flash_signal = True
         while(self.flash_signal and thread_time() <= duration):
             self.display_controller.set_display_color(bytes.fromhex(color))
+            self.set_buzzer(True)
             sleep(0.1)
             self.display_controller.set_display_color(bytes.fromhex(end_color))
+            self.set_buzzer(False)
             if(not self.flash_signal):
                 break
             sleep(duration/flashes)
@@ -347,6 +349,11 @@ class PortalBox:
         self.set_buzzer(True)
         sleep(.2)
         self.set_buzzer(False)
+
+
+
+
+
 
     def cleanup(self):
         logging.info("PortalBox.cleanup() starts")
