@@ -120,9 +120,9 @@ class PortalBox:
         # keep track of values in RFID module registers
         self.outlist = [0] * 64
 
-        #For controlling the flashing
+        #For controlling the flashing and beeping threads
         self.flash_signal = False
-
+        self.beep_signal = False
 
     def set_equipment_power_on(self, state):
         '''
@@ -152,7 +152,8 @@ class PortalBox:
         :param state: True -> Buzzer On; False -> Buzzer Off
         :return: None
         '''
-        GPIO.output(GPIO_BUZZER_PIN, state)
+        if(self.buzzer_enabled):
+            GPIO.output(GPIO_BUZZER_PIN, state)
 
 
     def get_button_state(self):
@@ -274,9 +275,7 @@ class PortalBox:
     def flash_display(self, color, duration=2.0, flashes=10, end_color = BLACK):
         """Flash color across all display pixels multiple times."""
         self.wake_display()
-        logging.debug("right before thread")
         if self.display_controller:
-            logging.debug("right IN")
             flash_thread = threading.Thread(
                 target = self.flash_thread,
                 args = (color, duration, flashes, end_color,),
@@ -292,7 +291,6 @@ class PortalBox:
     def flash_thread(self, color, duration, flashes, end_color):
         """Flash color across all display pixels multiple times. rate is in Hz"""
         self.flash_signal = True
-        logging.debug("right before while loop")
         while(self.flash_signal and thread_time() <= duration):
             self.display_controller.set_display_color(bytes.fromhex(color))
             sleep(0.1)
@@ -312,7 +310,7 @@ class PortalBox:
         else:
             logging.info("PortalBox stop_flashing failed")
 
-    def start_beeping(self, rate = 2.0):
+    def start_beeping(self, rate = 1.0):
         """Starts beeping at the specified rate in Hz"""
         if(self.buzzer_enabled):
             beep_thread = threading.Thread(
