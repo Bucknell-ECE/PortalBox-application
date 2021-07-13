@@ -245,18 +245,18 @@ class RunningNoCard(State):
     def __call__(self, input_data):
         #Card detected
         if(input_data["card_id"] > 0):
-            self.service.box.stop_flashing()
-            self.service.box.stop_beeping()
             self.next_state(RunningUnknownCard, input_data)
         if(self.grace_expired() or input_data["button_pressed"]):
-            self.service.box.stop_flashing()
-            self.service.box.stop_beeping()
             self.next_state(AccessComplete, input_data)
 
     def on_enter(self, input_data):
         logging.info("Grace period started")
         self.grace_start = datetime.now()
-        self.service.box.flash_display(self.service.settings["display"]["no_card_grace_color"],self.grace_delta.seconds,self.grace_delta.seconds*2)
+        self.service.box.flash_display(
+            self.service.settings["display"]["no_card_grace_color"],
+            self.grace_delta.seconds,
+            self.grace_delta.seconds*2
+            )
 
 class RunningTimeout(State):
     """
@@ -264,25 +264,22 @@ class RunningTimeout(State):
     """
     def __call__(self, input_data):
         if(input_data["card_id"] <= 0):
-            self.service.box.stop_flashing()
-            self.service.box.stop_beeping()
             self.next_state(AccessComplete, input_data)
 
         if(self.grace_expired()):
-            self.service.box.stop_flashing()
-            self.service.box.stop_beeping()
             self.next_state(IdleAuthCard, input_data)
 
         if(input_data["button_pressed"]):
-            self.service.box.stop_flashing()
-            self.service.box.stop_beeping()
             self.next_state(RunningUnknownCard, input_data)
 
     def on_enter(self, input_data):
         logging.info("Machine timout, grace period started")
         self.grace_start = datetime.now()
-        self.service.box.flash_display(self.service.settings["display"]["grace_timeout_color"],1.0)
-        self.service.box.start_beeping(1.0)
+        self.service.box.flash_display(
+            self.service.settings["display"]["grace_timeout_color"],
+            self.timeout_delta.seconds,
+            self.timeout_delta.seconds*2
+            )
 
 class IdleAuthCard(State):
     """
