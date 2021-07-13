@@ -331,10 +331,15 @@ class Database:
                 connection = self._connect()
 
             query = ("CALL log_access_completion(%s, %s)")
+            query2 = ("SELECT * FROM log")
+
             logging.debug("CALL log_access_completion({}, {})".format(card_id, equipment_id))
             cursor = connection.cursor()
+            cursor.execute(query2)
+            logging.debug(cursor.fetchall())
 
             cursor.execute(query, (card_id, equipment_id))
+
             connection.commit()
             cursor.close()
             if not self.use_persistent_connection:
