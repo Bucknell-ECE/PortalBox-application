@@ -25,8 +25,7 @@
 # from standard library
 import os
 import logging
-from time import sleep
-from time import sleep, time_ns
+from time import sleep, time_ns, thread_time
 import threading
 
 # Our libraries
@@ -49,8 +48,9 @@ GPIO_SOLID_STATE_RELAY_PIN = 37
 GPIO_RFID_NRST_PIN = 13
 
 #FIXME Get from config file
-RED = b'\xFF\x00\x00'
-YELLOW = b'\xFF\x80\x00'
+RED = "FF 00 00"
+YELLOW = 'FF 80 00'
+BLACK = "00 00 00"
 
 # Utility functions
 def get_revision():
@@ -119,6 +119,9 @@ class PortalBox:
         self.sleepMode = False
         # keep track of values in RFID module registers
         self.outlist = [0] * 64
+
+        #For controlling the flashing
+        self.flash_signal = False
 
 
     def set_equipment_power_on(self, state):
@@ -248,6 +251,7 @@ class PortalBox:
         @param (bytes len 3) color - the color to set. Defaults to LED's off
         '''
         self.wake_display()
+        self.stop_flashing()
         if self.display_controller:
             self.display_controller.set_display_color(bytes.fromhex(color))
         else:
@@ -267,32 +271,37 @@ class PortalBox:
         else:
             logging.info("PortalBox color_wipe failed")
 
-    def flash_display(self, color, duration=1000, flashes=5, end_color = BLACK):
+    def flash_display(self, color, duration=2.0, flashes=5, end_color = BLACK):
         """Flash color across all display pixels multiple times."""
         self.wake_display()
         if self.display_controller:
-            logging.info("Should be flashing")
-            self.display_controller.flash_display(bytes.fromhex(color), duration, flashes, end_color)
-        else:
-            logging.info("PortalBox flash_display failed")
-    def flash_display_old(self, color, rate = 2.0):
-        """Flash color across all display pixels multiple times. rate is in Hz"""
-        self.wake_display()
-        if self.display_controller:
             flash_thread = threading.Thread(
-                target = self.display_controller.flash_display,
-                args = (bytes.fromhex(color), rate,),
+                target = self.flash_thread,
+                args = (color, duration, flashes, end_color),
                 name = "flashing_thread",
                 daemon = True
              )
-            flash_thread.start()
         else:
             logging.info("PortalBox flash_display failed")
+
+
+
+    def flash_thread(self, color, duration, flashes, end_color):
+        """Flash color across all display pixels multiple times. rate is in Hz"""
+        while(self.flash_signal and thread_time() <= duration):
+            self.set_display_color(bytes.fromhex(color))
+            sleep(0.1)
+            self.set_display_color(bytes.fromhex(end_color))
+            if(not self.flash_signal):
+                break
+            sleep(duration/flashes)
+
+
 
     def stop_flashing(self):
         """Stops the flashing thread"""
         if self.display_controller:
-            self.display_controller.flash_signal = False
+            self.flash_signal = False
             while("flashing_thread" in [t.getName() for t in threading.enumerate()]):
                 pass
         else:
