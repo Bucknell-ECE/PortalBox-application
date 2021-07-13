@@ -256,7 +256,7 @@ class RunningNoCard(State):
     def on_enter(self, input_data):
         logging.info("Grace period started")
         self.grace_start = datetime.now()
-        self.service.box.flash_display(self.service.settings["display"]["no_card_grace_color"],self.grace_delta.seconds,5)
+        self.service.box.flash_display(self.service.settings["display"]["no_card_grace_color"],self.grace_delta.seconds,self.grace_delta.seconds*2)
         self.service.box.start_beeping()
 
 class RunningTimeout(State):
