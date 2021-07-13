@@ -331,12 +331,12 @@ class Database:
                 connection = self._connect()
 
             query = ("CALL log_access_completion(%s, %s)")
-            query2 = ("SELECT id FROM log")
+            query2 = ("SELECT id FROM log WHERE id > 49000")
 
             logging.debug("CALL log_access_completion({}, {})".format(card_id, equipment_id))
             cursor = connection.cursor()
             cursor.execute(query2)
-            logging.debug(cursor.fetchone())
+            logging.debug(cursor.fetchall())
 
             cursor.execute(query, (card_id, equipment_id))
 
