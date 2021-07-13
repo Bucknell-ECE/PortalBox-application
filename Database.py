@@ -524,6 +524,6 @@ class Database:
             if not self.use_persistent_connection:
                 connection.close()
         except mysql.connector.Error as err:
-            logging.error("{}".format(err)
+            logging.error("{}".format(err))
             return 0
         return access_level[0]
