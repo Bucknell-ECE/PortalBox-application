@@ -257,7 +257,7 @@ class RunningNoCard(State):
         logging.info("Grace period started")
         self.grace_start = datetime.now()
         self.service.box.flash_display(self.service.settings["display"]["no_card_grace_color"],self.grace_delta.seconds,5)
-        self.service.box.start_beeping(self.grace_delta.seconds)
+        self.service.box.start_beeping()
 
 class RunningTimeout(State):
     """

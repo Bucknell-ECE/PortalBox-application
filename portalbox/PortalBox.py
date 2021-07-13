@@ -276,12 +276,14 @@ class PortalBox:
         self.wake_display()
         logging.debug("right before thread")
         if self.display_controller:
+            logging.debug("right IN")
             flash_thread = threading.Thread(
                 target = self.flash_thread,
                 args = (color, duration, flashes, end_color,),
                 name = "flashing_thread",
                 daemon = True
              )
+            flash_thread.start()
         else:
             logging.info("PortalBox flash_display failed")
 
