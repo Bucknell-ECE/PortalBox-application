@@ -271,7 +271,7 @@ class PortalBox:
         else:
             logging.info("PortalBox color_wipe failed")
 
-    def flash_display(self, color, duration=2.0, flashes=5, end_color = BLACK):
+    def flash_display(self, color, duration=2.0, flashes=10, end_color = BLACK):
         """Flash color across all display pixels multiple times."""
         self.wake_display()
         logging.debug("right before thread")
