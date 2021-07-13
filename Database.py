@@ -300,7 +300,6 @@ class Database:
                 connection = self._connect()
 
             query = ("CALL log_access_attempt(%s, %s, %s)")
-            logging.debug("CALL log_access_attempt({}, {}, {})".format(successful, card_id, equipment_id))
             cursor = connection.cursor()
             cursor.execute(query, (successful, card_id, equipment_id))
 
