@@ -168,6 +168,9 @@ class IdleUnknownCard(State):
         else:
             logging.info("Inserted card with id {}, is not authorized for this equipment".format(input_data["card_id"]))
             self.next_state(IdleUnauthCard, input_data)
+
+
+
 class RunningUnknownCard(State):
     """
     A Card has been read from the no card grace period
