@@ -100,7 +100,7 @@ class Setup(State):
             self.service.get_equipment_role()
             self.timeout_delta = timedelta(minutes = self.service.timeout_minutes)
             self.grace_delta = timedelta(seconds = self.service.settings.getint("user_exp","grace_period"))
-            for x in range(100, 500, 50):
+            for x in range(0, 1000, 100):
                 self.service.box.buzz_tone(x)
 
             self.next_state(IdleNoCard, input_data)
