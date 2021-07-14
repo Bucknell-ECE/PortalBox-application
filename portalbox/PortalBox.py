@@ -78,6 +78,7 @@ class PortalBox:
         ## GPIO pin assignments and initializations
         GPIO.setup(GPIO_INTERLOCK_PIN, GPIO.OUT)
         GPIO.setup(GPIO_BUZZER_PIN, GPIO.OUT)
+        self.buzzer_pwm = GPIO.PWM(GPIO_BUZZER_PIN, 10)
         GPIO.setup(GPIO_SOLID_STATE_RELAY_PIN, GPIO.OUT)
 
         # Reset the RFID card
