@@ -101,7 +101,7 @@ class Setup(State):
             self.timeout_delta = timedelta(minutes = self.service.timeout_minutes)
             self.grace_delta = timedelta(seconds = self.service.settings.getint("user_exp","grace_period"))
             for x in range(100, 500, 50):
-                self.box.buzz_tone(x)
+                self.service.box.buzz_tone(x)
             self.next_state(IdleNoCard, input_data)
         except Exception as e:
             logging.error("Unable to complete setup exception raised: \n\t{}".format(e))
