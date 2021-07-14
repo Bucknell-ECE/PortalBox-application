@@ -155,7 +155,11 @@ class PortalBox:
         '''
         if(self.buzzer_enabled):
             GPIO.output(GPIO_BUZZER_PIN, state)
-
+    def buzz_tone(self, freq):
+        self.buzzer_pwm.start(50)
+        self.buzzer_pwm.ChangeFrequency(freq)
+        sleep(.1)
+        self.buzzer_pwm.stop()
 
     def get_button_state(self):
         '''
