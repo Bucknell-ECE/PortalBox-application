@@ -160,6 +160,7 @@ class PortalBox:
         self.buzzer_pwm.ChangeFrequency(freq)
         sleep(.5)
         self.buzzer_pwm.stop()
+        sleep(.5)
 
     def get_button_state(self):
         '''
