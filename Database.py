@@ -527,7 +527,10 @@ class Database:
             cursor.close()
             if not self.use_persistent_connection:
                 connection.close()
+            if access_level is None:
+                access_level = [0]
         except mysql.connector.Error as err:
             logging.error("{}".format(err))
             return 0
         return access_level[0]
+        

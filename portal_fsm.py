@@ -100,11 +100,12 @@ class Setup(State):
             self.service.get_equipment_role()
             self.timeout_delta = timedelta(minutes = self.service.timeout_minutes)
             self.grace_delta = timedelta(seconds = self.service.settings.getint("user_exp","grace_period"))
-            for x in range(0, 1000, 100):
-                self.service.box.buzz_tone(x)
-
             self.next_state(IdleNoCard, input_data)
+            self.service.box.buzz_tone(500,.2)
+            #self.service.box.play_song("/opt/portal-box/portalbox/RickRoll.txt")
+            #x = 5/0
         except Exception as e:
+            raise(e)
             logging.error("Unable to complete setup exception raised: \n\t{}".format(e))
             self.next_state(Shutdown, input_data)
 
@@ -179,7 +180,10 @@ class RunningUnknownCard(State):
     A Card has been read from the no card grace period
     """
     def __call__(self, input_data):
-
+        logging.debug("is USER{}?".format(input_data["card_type"] == CardType.USER_CARD))
+        logging.debug(self.user_authority_level)
+        logging.debug(self.proxy_id)
+        logging.debug((self.training_id <= 0 or self.training_id == input_data["card_id"]))
         #Proxy card, AND not coming from training mode
         if(
             input_data["card_type"] == CardType.PROXY_CARD and
@@ -194,12 +198,13 @@ class RunningUnknownCard(State):
         #Not coming from proxy mode AND
         #Not coming from training mode, OR the card is the same one that was being trained AND
         #An unathorized user
+
         elif(
             input_data["card_type"] == CardType.USER_CARD and
             self.user_authority_level >= 2 and
             self.proxy_id <= 0 and
             (self.training_id <= 0 or self.training_id == input_data["card_id"]) and
-            self.service.get_user_auths(input_data["card_id"])
+            not self.service.get_user_auths(input_data["card_id"])
             ):
             self.next_state(RunningTrainingCard, input_data)
         else:
@@ -239,6 +244,7 @@ class IdleUnauthCard(State):
             self.next_state(IdleNoCard, input_data)
 
     def on_enter(self, input_data):
+        self.service.box.beep_once()
         self.service.box.set_equipment_power_on(False)
         self.service.box.set_display_color(self.service.settings["display"]["unauth_color"])
         self.service.db.log_access_attempt(input_data["card_id"], self.service.equipment_id, False)

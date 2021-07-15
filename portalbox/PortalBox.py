@@ -33,19 +33,20 @@ from .display.AbstractController import BLACK
 
 # third party
 import RPi.GPIO as GPIO
-from .MFRC522 import MFRC522
+from mfrc522 import MFRC522
 
 # Constants defining how peripherals are connected
 #FIXME Add RPi4?
 REVISION_ID_RASPBERRY_PI_0_W = "9000c1"
 #FIXME Get this from config file
-LEDS = "NEOPIXELS"
+LEDS = "DOTSTARS"
 
 GPIO_INTERLOCK_PIN = 11
 GPIO_BUZZER_PIN = 33
 GPIO_BUTTON_PIN = 35
 GPIO_SOLID_STATE_RELAY_PIN = 37
 GPIO_RFID_NRST_PIN = 13
+GPIO_RESET_BTN_PIN = 3
 
 #FIXME Get from config file
 RED = "FF 00 00"
@@ -124,6 +125,7 @@ class PortalBox:
         #For controlling the flashing and beeping threads
         self.flash_signal = False
         self.beep_signal = False
+        self.song_signal = False
 
     def set_equipment_power_on(self, state):
         '''
@@ -147,7 +149,6 @@ class PortalBox:
         else:
             GPIO.output(GPIO_INTERLOCK_PIN, (not state))
 
-
     def set_buzzer(self, state):
         '''
         :param state: True -> Buzzer On; False -> Buzzer Off
@@ -155,13 +156,80 @@ class PortalBox:
         '''
         if(self.buzzer_enabled):
             GPIO.output(GPIO_BUZZER_PIN, state)
-    def buzz_tone(self, freq):
-        self.buzzer_pwm.start(50)
-        self.buzzer_pwm.ChangeFrequency(freq)
-        sleep(.5)
-        self.buzzer_pwm.stop()
-        sleep(.5)
+            
+    def buzz_tone(self, freq, length = 0.2, stop_song = False):
+        """
+            Plays the specified tone on the buzzer for the specified length
+        """
+        if(self.buzzer_enabled):
+            if(stop_song):
+                self.song_signal = False
+            self.buzzer_pwm.start(50)
+            self.buzzer_pwm.ChangeFrequency(freq)
+            sleep(length)
+            self.buzzer_pwm.stop()
+            
+            
+            
+    def play_song(self, file_name, sn_len = .1, spacing = .05):
+        """
+            Plays a song from a file
+            sn_len(float) is the smallest note length in seconds
+            spacing(float) is time between each note in seconds 
+        """
+        if(self.buzzer_enabled):
+            self.song_signal = True
+            song_thread = threading.Thread(
+                    target = self.song_thread,
+                    args = (file_name, sn_len, spacing,),
+                    name = "song_thread",
+                    daemon = True
+                 )
+            song_thread.start()
 
+    def song_thread(self,file_name, sn_len, spacing):
+        """
+            Plays a song from a file, the notes here are in 4th octave 
+        """
+        notes = {
+            "C":  261.63,
+            "Db": 277.18,
+            "D":  293.66,
+            "Eb": 311.13,
+            "E":  329.63,
+            "F":  349.23,
+            "Gb": 369.99,
+            "G":  392,
+            "Ab": 415.3,
+            "A":  440,
+            "Bb": 466.16,
+            "B":  493.88
+        }
+        song_file = open(file_name,"r")
+        
+        #Take each line/note in the song and split it into the note the octave and length
+        for line in song_file:
+            if(self.song_signal == False):
+                break
+            split_line = line.split(",")
+            note_oct = split_line[0]
+            
+            #determines if a note is flat
+            if(note_oct[1] == "b"):
+                note = note_oct[0:2]
+                octave = int(note_oct[2])
+            else:
+                note = note_oct[0]
+                octave = int(note_oct[1])
+                
+            freq = notes[note] * (2**(octave-4))
+            length = float(split_line[1]) * sn_len
+            
+            self.buzz_tone(freq,length)
+            
+            sleep(spacing)
+            
+        
     def get_button_state(self):
         '''
         Determine the current button state
@@ -279,7 +347,9 @@ class PortalBox:
             logging.info("PortalBox color_wipe failed")
 
     def flash_display(self, color, duration=2.0, flashes=10, end_color = BLACK):
-        """Flash color across all display pixels multiple times."""
+        """
+            Flash color across all display pixels multiple times.
+        """
         self.wake_display()
         if self.display_controller:
             flash_thread = threading.Thread(
@@ -295,14 +365,14 @@ class PortalBox:
 
 
     def flash_thread(self, color, duration, flashes, end_color):
-        """Flash color across all display pixels multiple times. rate is in Hz"""
+        """
+            Flash color across all display pixels multiple times. rate is in Hz
+        """
         self.flash_signal = True
         while(self.flash_signal and thread_time() <= duration):
             self.display_controller.set_display_color(bytes.fromhex(color))
-            self.set_buzzer(True)
-            sleep(0.1)
+            self.buzz_tone(500,0.1)
             self.display_controller.set_display_color(bytes.fromhex(end_color))
-            self.set_buzzer(False)
             if(not self.flash_signal):
                 break
             sleep(duration/flashes)
@@ -310,7 +380,9 @@ class PortalBox:
 
 
     def stop_flashing(self):
-        """Stops the flashing thread"""
+        """
+            Stops the flashing thread
+        """
         if self.display_controller:
             self.flash_signal = False
             while("flashing_thread" in [t.getName() for t in threading.enumerate()]):
@@ -319,7 +391,9 @@ class PortalBox:
             logging.info("PortalBox stop_flashing failed")
 
     def start_beeping(self, rate = 1.0):
-        """Starts beeping at the specified rate in Hz"""
+        """
+            Starts beeping at the specified rate in Hz
+        """
         if(self.buzzer_enabled):
             beep_thread = threading.Thread(
                 target = self.beep,
@@ -332,7 +406,9 @@ class PortalBox:
             return
 
     def stop_beeping(self):
-        """Stops the flashing thread"""
+        """
+            Stops the flashing thread
+        """
         if self.buzzer_enabled:
             self.beep_signal = False
             while("beep_thread" in [t.getName() for t in threading.enumerate()]):
@@ -341,20 +417,21 @@ class PortalBox:
             logging.info("PortalBox stop_beeping failed")
 
     def beep(self, rate = 2.0):
-        """Beeps at the specified rate in Hz"""
+        """
+            Beeps at the specified rate in Hz until the beep thread is killed
+        """
         self.beep_signal = True
+        
         while(self.beep_signal):
-            self.set_buzzer(True)
-            sleep(.1)
-            self.set_buzzer(False)
+            self.buzz_tone(800,.1)
             sleep(1/rate)
-        self.set_buzzer(False)
+        self.buzzer_pwm.stop()
 
     def beep_once(self):
-        "beeps the buzzer once"
-        self.set_buzzer(True)
-        sleep(.2)
-        self.set_buzzer(False)
+        """
+            beeps the buzzer once
+        """
+        self.buzz_tone(800,.1,stop_song = True)
 
 
 
