@@ -33,7 +33,7 @@ from .display.AbstractController import BLACK
 
 # third party
 import RPi.GPIO as GPIO
-from mfrc522 import MFRC522
+from .MFRC522 import MFRC522
 
 # Constants defining how peripherals are connected
 #FIXME Add RPi4?
