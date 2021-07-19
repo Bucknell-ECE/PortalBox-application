@@ -89,6 +89,7 @@ class Database:
         '''
         logging.debug("Attempting to connect to database")
 
+        logging.debug("Connection Settings: {}".format(str(self.connection_settings)))
         connection = mysql.connector.connect(**self.connection_settings)
 
         logging.debug("Connected to database")
@@ -195,10 +196,11 @@ class Database:
             if 0 < cursor.rowcount:
                 # Interpret result
                 profile = cursor.fetchone()
-                logging.debug("Fetched equipment profile")
+                logging.debug("Fetched equipment profile : {}".format(profile))
             else:
+                return profile
                 logging.debug("Failed to fetch equipment profile")
-
+                
             query = ("SELECT requires_training, charge_policy_id > 2 FROM equipment_types WHERE id = %s")
             cursor = connection.cursor()
             cursor.execute(query, (profile[1],))
@@ -359,7 +361,10 @@ class Database:
                     connection = self._reconnect()
             else:
                 connection = self._connect()
-
+                
+            if self.is_user_active(card_id) == False:
+                return False
+            
             cursor = connection.cursor()
             if self.requires_training and self.requires_payment:
                 # check balance
@@ -375,6 +380,8 @@ class Database:
                     (count,) = cursor.fetchone()
                     if 0 < count:
                         is_authorized = True
+                else:
+                    is_authorized = False
             elif self.requires_training and not self.requires_payment:
                 query = ("SELECT count(u.id) FROM users_x_cards AS u "
                 "INNER JOIN authorizations AS a ON a.user_id= u.user_id "
@@ -390,6 +397,8 @@ class Database:
                 (balance,) = cursor.fetchone()
                 if 0.0 < balance:
                     is_authorized = True
+                else:
+                    is_authorized = False
             else:
                 # we don't require payment or training, user is implicitly authorized
                 is_authorized = True
@@ -434,7 +443,37 @@ class Database:
             logging.error("{}".format(err))
 
         return CardType(type_id)
+    
+    def is_user_active(self, id):
+        """
+        Returns whether or not the user is active
+        """
+        is_user_active = False
+        connection = self._connection
 
+        try:
+            if self.use_persistent_connection:
+                if not connection.is_connected():
+                    connection = self._reconnect()
+            else:
+                connection = self._connect()
+                
+            query = ("SELECT u.is_active FROM users AS u INNER JOIN users_x_cards AS uxc ON uxc.user_id = u.id WHERE uxc.card_id = %s;")
+            
+            cursor = connection.cursor(buffered = True)
+            cursor.execute(query, (id,))
+            
+            if 0 < cursor.rowcount:
+                (is_user_active,) = cursor.fetchone()
+                logging.debug("IS USER ACTIVE: {}".format(is_user_active))
+
+            cursor.close()
+            if not self.use_persistent_connection:
+                connection.close()
+        except mysql.connector.Error as err:
+            logging.error("{}".format(err))
+
+        return is_user_active     
 
     def is_training_card_for_equipment_type(self, id, type_id):
         '''
@@ -498,6 +537,33 @@ class Database:
             logging.error("{}".format(err))
 
         return user
+
+    def get_equipment_name(self, equipment_id):
+        """
+        Gets the equipments name
+        """
+        name = "Unknown"
+        connection = self._connection
+        
+        #try:
+        if self.use_persistent_connection:
+            if not connection.is_connected():
+                connection = self._reconnect()
+        else:
+            connection = self._connect()
+        query = ("SELECT name FROM equipment WHERE id = %s")
+        cursor = connection.cursor(buffered = True) # we want rowcount to be available
+        cursor.execute(query, (equipment_id,))
+        (name,) = cursor.fetchone()
+#             if 0 < cursor.rowcount:
+            
+        cursor.close()
+        if not self.use_persistent_connection:
+            connection.close()
+        #except mysql.connector.Error as err:
+            #logging.error("{}".format(err))
+
+        return name
 
     def is_user_trainer(self, id):
         '''

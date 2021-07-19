@@ -102,17 +102,29 @@ class PortalBoxApplication():
             raise e
         logging.info("Successfully connected to email")
 
+    def getmac(self, interface):
+        """From Julio SChurt on https://stackoverflow.com/questions/159137/getting-mac-address"""
+        try:
+            mac = open('/sys/class/net/'+interface+'/address').readline()
+        except:
+            mac = "00:00:00:00:00:00"
 
+        return mac[0:17]
 
     def get_equipment_role(self):
-        # Step 1 Figure out our identity
-        logging.debug("Attempting to get mac address")
-        mac_address = format(get_mac_address(), "x")
-        logging.debug("Successfully got mac address")
+
+
 
         # Determine what we are
         profile = (-1,)
         while profile[0] < 0:
+            # Step 1 Figure out our identity
+            logging.debug("Attempting to get mac address")
+            mac_address = self.getmac("wlan0").replace(":","")
+            ##format(, "x")
+            #mac_address = format(get_mac_address(), "x")
+            logging.debug("Successfully got mac address: {}".format(mac_address))
+            
             profile = self.db.get_equipment_profile(mac_address)
             if profile[0] < 0:
                 sleep(5)
@@ -172,9 +184,10 @@ class PortalBoxApplication():
                 "user_authority_level": 0,
                 "button_pressed": self.box.has_button_been_pressed()
             }
-        #Else just use the old data
+        #Else just use the old data and update the button
         else:
             new_input_data = old_input_data
+            new_input_data["button_pressed"] = self.box.has_button_been_pressed()
 
         return new_input_data
 
@@ -202,7 +215,11 @@ class PortalBoxApplication():
         user = self.db.get_user(auth_id)
         try:
             logging.debug("Mailing user")
-            self.emailer.send(user[1], "Access Card left in PortalBox", "{} it appears you left your access card in a badge box for the {} in the {}".format(user[0], self.equipment_type, self.location))
+            self.emailer.send(user[1], "Access Card left in PortalBox", "{} it appears you left your access card in a portal box for the {} named {} in the {}".format(
+                user[0],
+                self.equipment_type,
+                self.db.get_equipment_name(self.equipment_id),
+                self.location))
         except Exception as e:
             logging.error("{}".format(e))
 
@@ -223,15 +240,12 @@ class PortalBoxApplication():
         logging.info("Service Exiting")
         os.system("echo service_exit > /tmp/boxactivity")
         os.system("echo False > /tmp/running")
-        if self.running:
-            if self.equipment_id:
-                logging.info("Logging exit-while-running to DB")
-                self.db.log_shutdown_status(self.equipment_id, False)
-            self.running = False
-        else:
-            # never made it to the run state
-            logging.info("Not running, just exit")
-        sys.exit()
+        
+        if self.equipment_id:
+            logging.info("Logging exit-while-running to DB")
+            self.db.log_shutdown_status(self.equipment_id, False)
+        self.running = False
+
 
 
 
@@ -268,7 +282,7 @@ if __name__ == "__main__":
         else:
             logging.basicConfig(level=logging.ERROR)
 
-    # Create Badge Box Service
+    # Create Portal Box Service
     logging.debug("Creating PortalBoxApplication")
     service = PortalBoxApplication(settings)
 
@@ -286,7 +300,7 @@ if __name__ == "__main__":
 
     logging.debug("Running the FSM")
     service.running = True
-    while True:
+    while service.running:
         input_data = service.get_inputs(input_data)
         fsm(input_data)
         #If the FSM is in the Shutdown state, then stop running the while loop
@@ -299,6 +313,8 @@ if __name__ == "__main__":
     service.box.cleanup()
     logging.info("Shutting down logger")
     logging.shutdown()
+
+    sys.exit()
 
 
 ##TODO add a default config somehwere

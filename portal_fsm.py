@@ -103,7 +103,6 @@ class Setup(State):
             self.next_state(IdleNoCard, input_data)
             self.service.box.buzz_tone(500,.2)
             #self.service.box.play_song("/opt/portal-box/portalbox/RickRoll.txt")
-            #x = 5/0
         except Exception as e:
             raise(e)
             logging.error("Unable to complete setup exception raised: \n\t{}".format(e))
@@ -118,7 +117,6 @@ class Shutdown(State):
     """
     def __call__(self, input_data):
         self.service.box.set_equipment_power_on(False)
-        self.service.box.set_display_color()# Turns off the display
         self.service.shutdown() #logging the shutdown is done in this method
 
 
@@ -194,14 +192,14 @@ class RunningUnknownCard(State):
             self.next_state(RunningAuthUser, input_data)
 
         #User card, AND
-        #The box was intially authrized by a trainer AND
+        #The box was intially authorized by a trainer or admin AND
         #Not coming from proxy mode AND
         #Not coming from training mode, OR the card is the same one that was being trained AND
         #An unathorized user
 
         elif(
             input_data["card_type"] == CardType.USER_CARD and
-            self.user_authority_level >= 2 and
+            self.user_authority_level >= 3 and
             self.proxy_id <= 0 and
             (self.training_id <= 0 or self.training_id == input_data["card_id"]) and
             not self.service.get_user_auths(input_data["card_id"])
@@ -258,6 +256,7 @@ class RunningNoCard(State):
         #Card detected
         if(input_data["card_id"] > 0):
             self.next_state(RunningUnknownCard, input_data)
+            
         if(self.grace_expired() or input_data["button_pressed"]):
             self.next_state(AccessComplete, input_data)
 
@@ -275,14 +274,16 @@ class RunningTimeout(State):
     The machine has timed out, has a grace period before going to the next state
     """
     def __call__(self, input_data):
+        if(input_data["button_pressed"]):
+            self.next_state(RunningUnknownCard, input_data)
+        
         if(input_data["card_id"] <= 0):
             self.next_state(AccessComplete, input_data)
 
         if(self.grace_expired()):
             self.next_state(IdleAuthCard, input_data)
 
-        if(input_data["button_pressed"]):
-            self.next_state(RunningUnknownCard, input_data)
+
 
     def on_enter(self, input_data):
         logging.info("Machine timout, grace period started")

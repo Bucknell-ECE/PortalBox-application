@@ -88,10 +88,10 @@ class DotstarController(AbstractController):
     def set_display_color(self, color=BLACK):
         """Set the entire strip to specified color (defaults to black)."""
         AbstractController.set_display_color(self, color)
-
         command = "color {} {} {}\n".format(color[2],
                                             color[0],
                                             color[1])
+        
         self._transmit(command)
         return self._receive()
 
@@ -129,14 +129,14 @@ class DotstarController(AbstractController):
             self._transmit(command)
             return self._receive()
 
-    def shutdown_display(self, end_color=b"\x08\x00\x00"):
+    def shutdown_display(self, end_color=b"\x00\x00\x00"):
         """Set the display color and terminate the driver process."""
 
         command = "color {} {} {}\n".format(end_color[0],
                                             end_color[1],
                                             end_color[2])
         self._transmit(command)
-        success = self._receive()
+        #success = self._receive()
         sleep(1)
 
         self.command_queue.close()
