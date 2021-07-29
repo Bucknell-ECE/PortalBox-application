@@ -83,7 +83,7 @@ class PortalBox:
         
 
         #Sets up the buzzer controller
-        self.buzzer_controller = BuzzerController(GPIO_BUZZER_PIN)
+        self.buzzer_controller = BuzzerController(GPIO_BUZZER_PIN, settings)
 
         
 

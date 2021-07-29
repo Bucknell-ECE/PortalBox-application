@@ -41,11 +41,17 @@ NOTES_4TH_OCTAVE = {
 class BuzzerController:
     
     def __init__(self, buzzer_pin = GPIO_BUZZER_PIN, settings = {}):
+        
+        pwm_enabled = True
+        if "buzzer_pwm" in settings["display"]:
+            if settings["display"]["buzzer_pwm"].lower() in ("no", "false", "0"):
+                pwm_enabled = False
+        
         self.command_queue = multiprocessing.JoinableQueue()
         self.driver = multiprocessing.Process(
             target=buzzer_driver,
             name="buzzer",
-            args=(self.command_queue, buzzer_pin, True),
+            args=(self.command_queue, buzzer_pin, pwm_enabled),
         )
         self.driver.daemon = True
         self.driver.start()
@@ -314,6 +320,7 @@ def buzzer_driver(command_queue, buzzer_pin, pwm_buzzer):
                         buzz_con.freq_list.pop(0)
                     
                 else:
+                    buzz_con.stop_buzzer() 
                     buzz_con.is_singing = False
 
             if buzz_con.is_beeping:
@@ -329,6 +336,7 @@ def buzzer_driver(command_queue, buzzer_pin, pwm_buzzer):
 
                     buzz_con.beep_info["effect_time"] += LOOP_MS
                 else:
+                    buzz_con.stop_buzzer() 
                     buzz_con.is_beeping = False
                 
             if buzz_con.is_buzzing:
@@ -339,6 +347,9 @@ def buzzer_driver(command_queue, buzzer_pin, pwm_buzzer):
                 else:
                     buzz_con.stop_buzzer() 
                     buzz_con.is_buzzing = False
+            #If theres no effect going on then stop the buzzer 
+            if not( buzz_con.is_buzzing or buzz_con.is_beeping or buzz_con.is_singing):
+                buzz_con.stop_buzzer() 
 
 
     # Caught TERM or KILL from OS
