@@ -34,13 +34,13 @@ class DotstarController(AbstractController):
             self.sleep_color = b"\x00\x00\xFF"
 
         self.command_queue = multiprocessing.JoinableQueue()
-        driver = multiprocessing.Process(
+        self.driver = multiprocessing.Process(
             target=strip_driver,
             name="dotstar_strip",
             args=(self.command_queue, LED_COUNT, SPI_BUS, SPI_DEV),
         )
-        driver.daemon = True
-        driver.start()
+        self.driver.daemon = True
+        self.driver.start()
 
     def _transmit(self, command):
         """Put a command string in the queue."""
@@ -112,7 +112,6 @@ class DotstarController(AbstractController):
 
     def flash_display(self, flash_color, duration, flashes=5, end_color=BLACK):
         """Flash color across all display pixels multiple times."""
-
         command = "blink {} {} {} {} {}\n".format(flash_color[2],
                                                   flash_color[0],
                                                   flash_color[1],
@@ -120,14 +119,16 @@ class DotstarController(AbstractController):
                                                   flashes)
         self._transmit(command)
         success = self._receive()
-
-        if success:
+        return success
+        #logging.debug("recived: {}".format(success))
+#        return self._receive()
+#        if success:
              # END_COLOR is disabled....OK with that?
 #            command = "color {} {} {}\n".format(end_color[0],
 #                                                end_color[1],
 #                                                end_color[2])
-            self._transmit(command)
-            return self._receive()
+            #self._transmit(command)
+            #return self._receive()
 
     def shutdown_display(self, end_color=b"\x00\x00\x00"):
         """Set the display color and terminate the driver process."""
@@ -140,8 +141,8 @@ class DotstarController(AbstractController):
         sleep(1)
 
         self.command_queue.close()
-        driver.terminate()
+        self.driver.terminate()
         sleep(1)
-        if driver.is_alive():
-            driver.kill()
+        if self.driver.is_alive():
+            self.driver.kill()
         return

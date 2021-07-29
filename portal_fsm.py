@@ -41,6 +41,7 @@ class State(object):
         self.timeout_delta = timedelta(0)
         self.grace_delta = timedelta(seconds = 2)
         self.on_enter(input_data)
+        self.flash_rate = 3
 
     # Transition the FSM to another state, and invoke the on_enter()
     # method for the new state.
@@ -100,6 +101,7 @@ class Setup(State):
             self.service.get_equipment_role()
             self.timeout_delta = timedelta(minutes = self.service.timeout_minutes)
             self.grace_delta = timedelta(seconds = self.service.settings.getint("user_exp","grace_period"))
+            self.flash_rate = self.service.settings.getint("display","flash_rate")
             self.next_state(IdleNoCard, input_data)
             self.service.box.buzz_tone(500,.2)
             #self.service.box.play_song("/opt/portal-box/portalbox/RickRoll.txt")
@@ -130,7 +132,8 @@ class IdleNoCard(State):
             self.next_state(IdleUnknownCard, input_data)
 
     def on_enter(self, input_data):
-        self.service.box.set_display_color(self.service.settings["display"]["sleep_color"])
+        #self.service.box.set_display_color(self.service.settings["display"]["sleep_color"])
+        self.service.box.sleep_display()
 
 class AccessComplete(State):
     """
@@ -256,17 +259,24 @@ class RunningNoCard(State):
         #Card detected
         if(input_data["card_id"] > 0):
             self.next_state(RunningUnknownCard, input_data)
+            self.service.box.stop_buzzer(stop_beeping = True)
             
         if(self.grace_expired() or input_data["button_pressed"]):
             self.next_state(AccessComplete, input_data)
+            self.service.box.stop_buzzer(stop_beeping = True)
 
     def on_enter(self, input_data):
         logging.info("Grace period started")
         self.grace_start = datetime.now()
         self.service.box.flash_display(
             self.service.settings["display"]["no_card_grace_color"],
-            self.grace_delta.seconds,
-            self.grace_delta.seconds*2
+            self.grace_delta.seconds * 1000,
+            int(self.grace_delta.seconds * self.flash_rate)
+            )
+        self.service.box.start_beeping(
+            800,
+            self.grace_delta.seconds * 1000,
+            int(self.grace_delta.seconds * self.flash_rate)
             )
 
 class RunningTimeout(State):
@@ -276,12 +286,15 @@ class RunningTimeout(State):
     def __call__(self, input_data):
         if(input_data["button_pressed"]):
             self.next_state(RunningUnknownCard, input_data)
+            self.service.box.stop_buzzer(stop_beeping = True)
         
         if(input_data["card_id"] <= 0):
             self.next_state(AccessComplete, input_data)
+            self.service.box.stop_buzzer(stop_beeping = True)
 
         if(self.grace_expired()):
             self.next_state(IdleAuthCard, input_data)
+            self.service.box.stop_buzzer(stop_beeping = True)
 
 
 
@@ -290,8 +303,13 @@ class RunningTimeout(State):
         self.grace_start = datetime.now()
         self.service.box.flash_display(
             self.service.settings["display"]["grace_timeout_color"],
-            self.timeout_delta.seconds,
-            self.timeout_delta.seconds*2
+            self.timeout_delta.seconds * 1000,
+            int(self.grace_delta.seconds * self.flash_rate)
+            )
+        self.service.box.start_beeping(
+            800,
+            self.timeout_delta.seconds * 1000,
+            int(self.grace_delta.seconds * self.flash_rate)
             )
 
 class IdleAuthCard(State):
@@ -305,7 +323,11 @@ class IdleAuthCard(State):
 
     def on_enter(self, input_data):
         self.service.box.set_equipment_power_on(False)
-        self.service.send_user_email(input_data["card_id"])
+        if(self.proxy_id > 0):
+            self.service.send_user_email_proxy
+            (input_data["card_id"])
+        else:
+            self.service.send_user_email(input_data["card_id"])
         self.service.box.set_display_color(self.service.settings["display"]["timeout_color"])
 
 class RunningProxyCard(State):
@@ -319,6 +341,7 @@ class RunningProxyCard(State):
             self.next_state(RunningTimeout, input_data)
 
     def on_enter(self, input_data):
+        self.timeout_start = datetime.now()
         self.training_id = 0
         self.proxy_id = input_data["card_id"]
         self.service.box.set_equipment_power_on(True)
@@ -337,6 +360,7 @@ class RunningTrainingCard(State):
             self.next_state(RunningTimeout, input_data)
 
     def on_enter(self, input_data):
+        self.timeout_start = datetime.now()
         self.proxy_id = 0
         self.training_id = input_data["card_id"]
         self.service.box.set_equipment_power_on(True)

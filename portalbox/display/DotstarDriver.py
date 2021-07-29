@@ -2,6 +2,9 @@
 2021-05-26 Version   KJHass
   - Change end frame for Dotstar compatibility issue
     https://cpldcpu.wordpress.com/2016/12/13/sk9822-a-clone-of-the-apa102/
+    
+2021-07-27 Version James Howe
+    - Made it so that a color command will stop the blinking 
 """
 import logging
 import os
@@ -15,7 +18,7 @@ import spidev
 # For Dotstars, brightness is a 5-bit value from 0 to 31
 DEFAULT_BRIGHTNESS = 16
 MAX_PULSE_BRIGHTNESS = 30
-MIN_PULSE_BRIGHTNESS = 3
+MIN_PULSE_BRIGHTNESS = 1
 PULSE_BRIGHTNESS_STEP = 2
 # Color definitions
 BLACK = (0, 0, 0)
@@ -31,7 +34,7 @@ class DotstarStrip:
     A simple class definition for a strip of Dotstars.
 
     A pixel's color is stored as a red/green/blue tuple but the order that
-    colors are transmitted to a Dotstar is red-blue-green.
+    colors are transmitted to a Dotstar is B-blue-green.
     """
 
     def __init__(self, length, spi_bus, spi_device):
@@ -123,7 +126,6 @@ def process_command(command, led_strip):
     # split the string into a list of tokens
     tokens = command.split()
     params = [int(token) for token in tokens[1:]]
-
     # get command part of string and determine if it is recognized
     if tokens[0] == "blink":
         # Receiving a blink command aborts wiping or pulsing
@@ -178,9 +180,10 @@ def process_command(command, led_strip):
         led_strip.set_pixel_color(led_strip.wipe_color, 0)
 
     elif tokens[0] == "color":
-        # Receiving a color command aborts wiping in process
+        logging.debug("got color command")
+        # Receiving a color command aborts wiping and blinking in process
         led_strip.is_wiping = False
-
+        led_strip.is_blinking = False
         # The color command sets all of the pixels to the same color.
         # The command requires three integer values: red, green, and blue.
         red, green, blue = params

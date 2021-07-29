@@ -30,15 +30,17 @@ import threading
 
 # Our libraries
 from .display.AbstractController import BLACK
+from .BuzzerController import BuzzerController
 
 # third party
 import RPi.GPIO as GPIO
-from mfrc522 import MFRC522
+from .MFRC522 import MFRC522
 
 # Constants defining how peripherals are connected
 #FIXME Add RPi4?
 REVISION_ID_RASPBERRY_PI_0_W = "9000c1"
-#FIXME Get this from config file
+
+#Defined in config, but this is default 
 LEDS = "DOTSTARS"
 
 GPIO_INTERLOCK_PIN = 11
@@ -49,8 +51,6 @@ GPIO_RFID_NRST_PIN = 13
 GPIO_RESET_BTN_PIN = 3
 
 #FIXME Get from config file
-RED = "FF 00 00"
-YELLOW = 'FF 80 00'
 BLACK = "00 00 00"
 
 # Utility functions
@@ -78,9 +78,14 @@ class PortalBox:
 
         ## GPIO pin assignments and initializations
         GPIO.setup(GPIO_INTERLOCK_PIN, GPIO.OUT)
-        GPIO.setup(GPIO_BUZZER_PIN, GPIO.OUT)
-        self.buzzer_pwm = GPIO.PWM(GPIO_BUZZER_PIN, 10)
+
         GPIO.setup(GPIO_SOLID_STATE_RELAY_PIN, GPIO.OUT)
+        
+
+        #Sets up the buzzer controller
+        self.buzzer_controller = BuzzerController(GPIO_BUZZER_PIN)
+
+        
 
         # Reset the RFID card
         GPIO.setup(GPIO_RFID_NRST_PIN, GPIO.OUT)
@@ -90,7 +95,8 @@ class PortalBox:
         GPIO.add_event_detect(GPIO_BUTTON_PIN, GPIO.RISING)
 
         self.set_equipment_power_on(False)
-
+        
+        LEDS = settings["display"]["led_type"]
         # Create display controller
         if LEDS == "DOTSTARS":
             logging.debug("Creating DotStar display controller")
@@ -124,8 +130,7 @@ class PortalBox:
 
         #For controlling the flashing and beeping threads
         self.flash_signal = False
-        self.beep_signal = False
-        self.song_signal = False
+
 
     def set_equipment_power_on(self, state):
         '''
@@ -154,88 +159,7 @@ class PortalBox:
         else:
             GPIO.output(GPIO_INTERLOCK_PIN, (not state))
         """
-
-    def set_buzzer(self, state):
-        '''
-        :param state: True -> Buzzer On; False -> Buzzer Off
-        :return: None
-        '''
-        if(self.buzzer_enabled):
-            GPIO.output(GPIO_BUZZER_PIN, state)
-            
-    def buzz_tone(self, freq, length = 0.2, stop_song = False):
-        """
-            Plays the specified tone on the buzzer for the specified length
-        """
-        if(self.buzzer_enabled):
-            if(stop_song):
-                self.song_signal = False
-            self.buzzer_pwm.start(50)
-            self.buzzer_pwm.ChangeFrequency(freq)
-            sleep(length)
-            self.buzzer_pwm.stop()
-            
-            
-            
-    def play_song(self, file_name, sn_len = .1, spacing = .05):
-        """
-            Plays a song from a file
-            sn_len(float) is the smallest note length in seconds
-            spacing(float) is time between each note in seconds 
-        """
-        if(self.buzzer_enabled):
-            self.song_signal = True
-            song_thread = threading.Thread(
-                    target = self.song_thread,
-                    args = (file_name, sn_len, spacing,),
-                    name = "song_thread",
-                    daemon = True
-                 )
-            song_thread.start()
-
-    def song_thread(self,file_name, sn_len, spacing):
-        """
-            Plays a song from a file, the notes here are in 4th octave 
-        """
-        notes = {
-            "C":  261.63,
-            "Db": 277.18,
-            "D":  293.66,
-            "Eb": 311.13,
-            "E":  329.63,
-            "F":  349.23,
-            "Gb": 369.99,
-            "G":  392,
-            "Ab": 415.3,
-            "A":  440,
-            "Bb": 466.16,
-            "B":  493.88
-        }
-        song_file = open(file_name,"r")
-        
-        #Take each line/note in the song and split it into the note the octave and length
-        for line in song_file:
-            if(self.song_signal == False):
-                break
-            split_line = line.split(",")
-            note_oct = split_line[0]
-            
-            #determines if a note is flat
-            if(note_oct[1] == "b"):
-                note = note_oct[0:2]
-                octave = int(note_oct[2])
-            else:
-                note = note_oct[0]
-                octave = int(note_oct[1])
-                
-            freq = notes[note] * (2**(octave-4))
-            length = float(split_line[1]) * sn_len
-            
-            self.buzz_tone(freq,length)
-            
-            sleep(spacing)
-            
-        
+    
     def get_button_state(self):
         '''
         Determine the current button state
@@ -348,7 +272,7 @@ class PortalBox:
         '''
         self.wake_display()
         if self.display_controller:
-            self.display_controller.set_display_color_wipe(color, duration)
+            self.display_controller.set_display_color_wipe(bytes.fromhex(color), duration)
         else:
             logging.info("PortalBox color_wipe failed")
 
@@ -357,7 +281,7 @@ class PortalBox:
             Flash color across all display pixels multiple times.
         """
         self.wake_display()
-        if self.display_controller:
+        if self.display_controller and LEDS == "NEOPIXELS":
             flash_thread = threading.Thread(
                 target = self.flash_thread,
                 args = (color, duration, flashes, end_color,),
@@ -365,6 +289,8 @@ class PortalBox:
                 daemon = True
              )
             flash_thread.start()
+        elif self.display_controller and LEDS == "DOTSTARS":
+            self.display_controller.flash_display(bytes.fromhex(color), duration, flashes)
         else:
             logging.info("PortalBox flash_display failed")
 
@@ -395,59 +321,39 @@ class PortalBox:
                 pass
         else:
             logging.info("PortalBox stop_flashing failed")
-
-    def start_beeping(self, rate = 1.0):
+            
+            
+    def buzz_tone(self, freq, length = 0.2, stop_song = False, stop_beeping = False):
         """
-            Starts beeping at the specified rate in Hz
+            Plays the specified tone on the buzzer for the specified length
         """
         if(self.buzzer_enabled):
-            beep_thread = threading.Thread(
-                target = self.beep,
-                args = (rate,),
-                name = "beep_thread",
-                daemon = True
-             )
-            beep_thread.start()
-        else:
-            return
+            self.buzzer_controller.buzz_tone(freq, length, stop_song, stop_beeping)
 
-    def stop_beeping(self):
+    def start_beeping(self, freq, duration = 2.0, beeps = 10):
         """
-            Stops the flashing thread
+            Starts beeping for the duration with the given number of beeps 
         """
-        if self.buzzer_enabled:
-            self.beep_signal = False
-            while("beep_thread" in [t.getName() for t in threading.enumerate()]):
-                pass
-        else:
-            logging.info("PortalBox stop_beeping failed")
-
-    def beep(self, rate = 2.0):
+        if(self.buzzer_enabled):
+            self.buzzer_controller.beep(freq, duration, beeps)
+            
+    def stop_buzzer(self, stop_singing = False, stop_buzzing = False, stop_beeping = False):
         """
-            Beeps at the specified rate in Hz until the beep thread is killed
+            Stops the specified effect(s) on the buzzer 
         """
-        self.beep_signal = True
-        
-        while(self.beep_signal):
-            self.buzz_tone(800,.1)
-            sleep(1/rate)
-        self.buzzer_pwm.stop()
+        self.buzzer_controller.stop(stop_singing, stop_buzzing, stop_beeping)
 
     def beep_once(self):
         """
-            beeps the buzzer once
+            Beeps the buzzer once for a default freq and length
         """
-        self.buzz_tone(800,.1,stop_song = True)
-
-
-
-
+        self.buzz_tone(800,.1)
 
 
     def cleanup(self):
         logging.info("PortalBox.cleanup() starts")
         os.system("echo False > /tmp/running")
-        self.set_buzzer(False)
+        self.buzzer_controller.shutdown_buzzer()
         self.display_controller.shutdown_display()
         GPIO.cleanup()
         logging.info("Buzzer, display, and GPIO should be turned off")

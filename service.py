@@ -120,7 +120,7 @@ class PortalBoxApplication():
         while profile[0] < 0:
             # Step 1 Figure out our identity
             logging.debug("Attempting to get mac address")
-            mac_address = self.getmac("wlan0").replace(":","")
+            mac_address = self.getmac("wlan0").replace(":","") 
             ##format(, "x")
             #mac_address = format(get_mac_address(), "x")
             logging.debug("Successfully got mac address: {}".format(mac_address))
@@ -222,6 +222,24 @@ class PortalBoxApplication():
                 self.location))
         except Exception as e:
             logging.error("{}".format(e))
+            
+    def send_user_email_proxy(self, auth_id):
+        '''
+        Sends the user an email when they have left a proxy card in the machine
+            past the timeout
+        '''
+        logging.debug("Getting user email ID from DB")
+        user = self.db.get_user(auth_id)
+        try:
+            logging.debug("Mailing user")
+            self.emailer.send(user[1], "Proxy Card left in PortalBox", "{} it appears you left a proxy card in a portal box for the {} named {} in the {}".format(
+                user[0],
+                self.equipment_type,
+                self.db.get_equipment_name(self.equipment_id),
+                self.location))
+        except Exception as e:
+            logging.error("{}".format(e))
+
 
     def handle_interupt(self, signum, frame):
         '''
@@ -238,6 +256,7 @@ class PortalBoxApplication():
         Stops the program
         '''
         logging.info("Service Exiting")
+        self.box.cleanup()
         os.system("echo service_exit > /tmp/boxactivity")
         os.system("echo False > /tmp/running")
         
@@ -310,7 +329,7 @@ if __name__ == "__main__":
 
     # Cleanup and exit
     os.system("echo False > /tmp/running")
-    service.box.cleanup()
+    #service.box.cleanup()
     logging.info("Shutting down logger")
     logging.shutdown()
 
