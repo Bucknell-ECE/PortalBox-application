@@ -1,6 +1,9 @@
 #!python3
 
 """
+  2021-07-30 Version   KJHass
+    - Changed database query to determine authority level of user in
+      is_user_trainer()
   2021-07-09 Version   KJHass
     - Fixed bug in is_user_trainer() if can't access database
   2021-04-04 Version   KJHass
@@ -513,8 +516,9 @@ class Database:
             else:
                 connection = self._connect()
 
-            query = ("SELECT u.management_portal_access_level_id FROM users_x_cards AS c "
-                "JOIN users AS u ON u.id = c.user_id WHERE c.card_id = %s")
+            #query = ("SELECT u.management_portal_access_level_id FROM users_x_cards AS c "
+            #    "JOIN users AS u ON u.id = c.user_id WHERE c.card_id = %s")
+            query = ("SELECT role_id FROM users_x_cards AS c JOIN users AS u ON u.id = c.user_id WHERE c.card_id = %s")
 
             cursor = connection.cursor()
             cursor.execute(query, (id,))
@@ -526,4 +530,5 @@ class Database:
         except mysql.connector.Error as err:
             logging.error("{}".format(err))
 
+        logging.info("User access level: {}".format(access_level))
         return (access_level[0] > 1)
