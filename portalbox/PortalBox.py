@@ -93,7 +93,6 @@ class PortalBox:
 
         self.set_equipment_power_on(False)
         self.led_type = settings["display"]["led_type"]
-        logging.debug("LED TYPE IS {}".format(self.led_type))
         # Create display controller
         if self.led_type == "DOTSTARS":
             logging.debug("Creating DotStar display controller")
@@ -247,13 +246,14 @@ class PortalBox:
             logging.info("PortalBox sleep_display failed")
 
 
-    def set_display_color(self, color = "00 00 00"):
+    def set_display_color(self, color = "00 00 00", stop_flashing = True):
         '''
         Set the entire strip to specified color.
         @param (bytes len 3) color - the color to set. Defaults to LED's off
         '''
         self.wake_display()
-        self.stop_flashing()
+        if( stop_flashing ):
+            self.stop_flashing()
         if self.display_controller:
             self.display_controller.set_display_color(bytes.fromhex(color))
         else:
@@ -301,12 +301,10 @@ class PortalBox:
             Flash color across all display pixels multiple times. rate is in Hz
         """
         self.flash_signal = True
-        logging.debug("start thread")
         while(self.flash_signal and thread_time() <= duration):
-            logging.debug("start flash thread loop")
-            self.display_controller.set_display_color(bytes.fromhex(color))
+            self.display_controller.set_display_color(bytes.fromhex(color), False)
             #self.buzz_tone(500,0.1)
-            self.display_controller.set_display_color(bytes.fromhex(end_color))
+            self.display_controller.set_display_color(bytes.fromhex(end_color), False)
             if(not self.flash_signal):
                 break
             sleep(duration/flashes)
