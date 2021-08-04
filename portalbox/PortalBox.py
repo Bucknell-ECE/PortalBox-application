@@ -282,6 +282,7 @@ class PortalBox:
         """
         self.wake_display()
         if self.display_controller and LEDS == "NEOPIXELS":
+            logging.debug("neopixel flash display start?")
             flash_thread = threading.Thread(
                 target = self.flash_thread,
                 args = (color, duration, flashes, end_color,),
@@ -301,6 +302,7 @@ class PortalBox:
             Flash color across all display pixels multiple times. rate is in Hz
         """
         self.flash_signal = True
+        logging.debug("start thread")
         while(self.flash_signal and thread_time() <= duration):
             logging.debug("start flash thread loop")
             self.display_controller.set_display_color(bytes.fromhex(color))
