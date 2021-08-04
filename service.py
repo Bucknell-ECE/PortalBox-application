@@ -1,6 +1,9 @@
 #!python3
 
 """
+2021-08-04 Version   KJHass
+  - Make beeping a little less annoying when a card is removed
+
 2021-05-12 Version   KJHass
   - Feeding the watchdog is optional
   - Do not write /tmp/running
@@ -237,7 +240,7 @@ class PortalBoxApplication:
 
         logging.debug("Checking if user is a trainer or admin")
         self.user_is_trainer = self.db.is_user_trainer(user_id)
-        
+
         if 0 < self.timeout_period:
             self.exceeded_time = False
             logging.debug("Starting equipment timer")
@@ -272,6 +275,7 @@ class PortalBoxApplication:
 
         #loop endlessly waiting for shutdown or card to be removed
         logging.debug("Looping until not running or card removed")
+        self.box.set_display_color(RED)
         while self.running:
             feed_watchdog("wait_unauth_remove")
             self.box.flash_display(RED, 100, 1, RED)
@@ -280,6 +284,8 @@ class PortalBoxApplication:
             if uid < 0:
                 # we did not read a card
                 break
+
+            sleep(0.1)
 
         logging.debug("wait_for_unauthorized_card_removal() ends")
 
@@ -295,6 +301,7 @@ class PortalBoxApplication:
             color_now = TRAINER_COLOR
         else:
             color_now = AUTH_COLOR
+        self.box.set_display_color(color_now)
 
         #loop endlessly waiting for shutdown or card to be removed
         logging.debug("Waiting for card removal or timeout")
@@ -370,7 +377,7 @@ class PortalBoxApplication:
 
         previous_uid = -1
 
-        while self.running and grace_count < 16:
+        while self.running and grace_count < 300:
             feed_watchdog("wait_auth_card_return")
             # Check for button press
             if self.box.has_button_been_pressed():
@@ -417,10 +424,19 @@ class PortalBoxApplication:
                                       uid, self.equipment_type)
 
             grace_count += 1
-            self.box.set_buzzer(True)
-            self.box.flash_display(YELLOW, 100, 1, YELLOW)
-            self.box.set_buzzer(False)
 
+            if (grace_count % 4) == 0:
+                logging.debug("Starting to flash display yellow")
+                self.box.flash_display(YELLOW, 100, 1, YELLOW)
+
+            if (grace_count % 20) < 2:
+                self.box.set_buzzer(True)
+            else:
+                self.box.set_buzzer(False)
+
+            sleep(0.1)
+
+        self.box.set_buzzer(False)
         if self.running and not self.card_present:
             logging.info("Grace period following card removal expired; shutting down equipment")
         logging.debug("wait_for_user_card_return() ends")
@@ -440,7 +456,7 @@ class PortalBoxApplication:
         logging.debug("Setting display to orange")
         self.box.set_display_color(ORANGE)
         logging.debug("Starting grace period")
-        while self.running and grace_count < 600:
+        while self.running and grace_count < 300:
             feed_watchdog("grace_timeout")
             #check for button press
             if self.box.has_button_been_pressed():
@@ -458,11 +474,11 @@ class PortalBoxApplication:
             else:
                 grace_count += 1
 
-            if 1 > (grace_count % 2):
+            if (grace_count % 4) == 0:
                 logging.debug("Starting to flash display orange")
                 self.box.flash_display(ORANGE, 100, 1, ORANGE)
 
-            if 1 > (grace_count % 20):
+            if (grace_count % 20) < 2:
                 self.box.set_buzzer(True)
             else:
                 self.box.set_buzzer(False)
