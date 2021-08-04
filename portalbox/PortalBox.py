@@ -95,8 +95,9 @@ class PortalBox:
         GPIO.add_event_detect(GPIO_BUTTON_PIN, GPIO.RISING)
 
         self.set_equipment_power_on(False)
-
+        logging.debug("LED TYPE IS {}".format(LEDS))
         LEDS = settings["display"]["led_type"]
+        logging.debug("LED TYPE IS {}".format(LEDS))
         # Create display controller
         if LEDS == "DOTSTARS":
             logging.debug("Creating DotStar display controller")
