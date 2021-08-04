@@ -40,9 +40,6 @@ from .MFRC522 import MFRC522
 #FIXME Add RPi4?
 REVISION_ID_RASPBERRY_PI_0_W = "9000c1"
 
-#Defined in config, but this is default
-LEDS = "DOTSTARS"
-
 GPIO_INTERLOCK_PIN = 11
 GPIO_BUZZER_PIN = 33
 GPIO_BUTTON_PIN = 35
@@ -95,15 +92,14 @@ class PortalBox:
         GPIO.add_event_detect(GPIO_BUTTON_PIN, GPIO.RISING)
 
         self.set_equipment_power_on(False)
-        logging.debug("LED TYPE IS {}".format(LEDS))
-        LEDS = settings["display"]["led_type"]
-        logging.debug("LED TYPE IS {}".format(LEDS))
+        self.led_type = settings["display"]["led_type"]
+        logging.debug("LED TYPE IS {}".format(self.led_type))
         # Create display controller
-        if LEDS == "DOTSTARS":
+        if self.led_type == "DOTSTARS":
             logging.debug("Creating DotStar display controller")
             from .display.DotstarController import DotstarController
             self.display_controller = DotstarController()
-        elif LEDS == "NEOPIXELS":
+        elif self.led_type == "NEOPIXELS":
             logging.debug("Creating Neopixel display controller")
             from .display.R2NeoPixelController import R2NeoPixelController
             self.display_controller = R2NeoPixelController()
@@ -283,8 +279,8 @@ class PortalBox:
         """
         self.wake_display()
         logging.debug("flash display called")
-        logging.debug("LED TYPE IS {}".format(LEDS))
-        if self.display_controller and LEDS == "NEOPIXELS":
+        logging.debug("LED TYPE IS {}".format(self.led_type))
+        if self.display_controller and self.led_type == "NEOPIXELS":
             logging.debug("neopixel flash display start?")
             flash_thread = threading.Thread(
                 target = self.flash_thread,
@@ -293,7 +289,7 @@ class PortalBox:
                 daemon = True
              )
             flash_thread.start()
-        elif self.display_controller and LEDS == "DOTSTARS":
+        elif self.display_controller and self.led_type == "DOTSTARS":
             self.display_controller.flash_display(bytes.fromhex(color), duration, flashes)
         else:
             logging.info("PortalBox flash_display failed")
