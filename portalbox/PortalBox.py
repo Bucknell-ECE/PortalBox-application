@@ -240,6 +240,7 @@ class PortalBox:
 
         :return: None
         '''
+        self.stop_flashing()
         if self.display_controller:
             self.display_controller.sleep_display()
         else:
