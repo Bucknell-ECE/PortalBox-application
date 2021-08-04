@@ -40,7 +40,7 @@ from .MFRC522 import MFRC522
 #FIXME Add RPi4?
 REVISION_ID_RASPBERRY_PI_0_W = "9000c1"
 
-#Defined in config, but this is default 
+#Defined in config, but this is default
 LEDS = "DOTSTARS"
 
 GPIO_INTERLOCK_PIN = 11
@@ -80,12 +80,12 @@ class PortalBox:
         GPIO.setup(GPIO_INTERLOCK_PIN, GPIO.OUT)
 
         GPIO.setup(GPIO_SOLID_STATE_RELAY_PIN, GPIO.OUT)
-        
+
 
         #Sets up the buzzer controller
         self.buzzer_controller = BuzzerController(GPIO_BUZZER_PIN, settings)
 
-        
+
 
         # Reset the RFID card
         GPIO.setup(GPIO_RFID_NRST_PIN, GPIO.OUT)
@@ -95,7 +95,7 @@ class PortalBox:
         GPIO.add_event_detect(GPIO_BUTTON_PIN, GPIO.RISING)
 
         self.set_equipment_power_on(False)
-        
+
         LEDS = settings["display"]["led_type"]
         # Create display controller
         if LEDS == "DOTSTARS":
@@ -148,10 +148,10 @@ class PortalBox:
         ## Turn off power to SSR
         GPIO.output(GPIO_SOLID_STATE_RELAY_PIN, state)
         ## Open interlock
-        
-        #FIXME Seems like we didn't need the if else below? Like it just makes things complicated 
+
+        #FIXME Seems like we didn't need the if else below? Like it just makes things complicated
         GPIO.output(GPIO_INTERLOCK_PIN, state)
-        
+
         """
         #FIXME  Why? What do we do for Pi4?
         if self.is_pi_zero_w:
@@ -159,7 +159,7 @@ class PortalBox:
         else:
             GPIO.output(GPIO_INTERLOCK_PIN, (not state))
         """
-    
+
     def get_button_state(self):
         '''
         Determine the current button state
@@ -302,8 +302,9 @@ class PortalBox:
         """
         self.flash_signal = True
         while(self.flash_signal and thread_time() <= duration):
+            logging.debug("start flash thread loop")
             self.display_controller.set_display_color(bytes.fromhex(color))
-            self.buzz_tone(500,0.1)
+            #self.buzz_tone(500,0.1)
             self.display_controller.set_display_color(bytes.fromhex(end_color))
             if(not self.flash_signal):
                 break
@@ -321,8 +322,8 @@ class PortalBox:
                 pass
         else:
             logging.info("PortalBox stop_flashing failed")
-            
-            
+
+
     def buzz_tone(self, freq, length = 0.2, stop_song = False, stop_beeping = False):
         """
             Plays the specified tone on the buzzer for the specified length
@@ -332,14 +333,14 @@ class PortalBox:
 
     def start_beeping(self, freq, duration = 2.0, beeps = 10):
         """
-            Starts beeping for the duration with the given number of beeps 
+            Starts beeping for the duration with the given number of beeps
         """
         if(self.buzzer_enabled):
             self.buzzer_controller.beep(freq, duration, beeps)
-            
+
     def stop_buzzer(self, stop_singing = False, stop_buzzing = False, stop_beeping = False):
         """
-            Stops the specified effect(s) on the buzzer 
+            Stops the specified effect(s) on the buzzer
         """
         self.buzzer_controller.stop(stop_singing, stop_buzzing, stop_beeping)
 
