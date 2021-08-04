@@ -3,6 +3,9 @@
 # PortalBox.py acts as a hardware abstraction layer exposing a somewhat
 # simple API to the hardware
 """
+2021-06-09 Version   KJHass
+  - Supports either Neopixels or DotStars
+
 2021-05-12 Version   KJHass
   - read card twice before returning card id number or -1
   - don't read RFID reader version for debugging, it doesn't help
@@ -32,10 +35,14 @@ from .display.AbstractController import BLACK
 
 # third party
 import RPi.GPIO as GPIO
-
+#from mfrc522 import MFRC522
+from .MFRC522 import MFRC522
 
 # Constants defining how peripherals are connected
+#FIXME Add RPi4?
 REVISION_ID_RASPBERRY_PI_0_W = "9000c1"
+#FIXME Get this from config file
+LEDS = "NEOPIXELS"
 
 GPIO_INTERLOCK_PIN = 11
 GPIO_BUZZER_PIN = 33
@@ -43,9 +50,9 @@ GPIO_BUTTON_PIN = 35
 GPIO_SOLID_STATE_RELAY_PIN = 37
 GPIO_RFID_NRST_PIN = 13
 
-
+#FIXME Get from config file
 RED = b'\xFF\x00\x00'
-YELLOW = b'\xFF\xFF\x00'
+YELLOW = b'\xFF\x80\x00'
 
 # Utility functions
 def get_revision():
@@ -86,8 +93,12 @@ class PortalBox:
         self.set_equipment_power_on(False)
 
         # Create display controller
-        if self.is_pi_zero_w:
-            logging.debug("Creating display controller")
+        if LEDS == "DOTSTARS":
+            logging.debug("Creating DotStar display controller")
+            from .display.DotstarController import DotstarController
+            self.display_controller = DotstarController()
+        elif LEDS == "NEOPIXELS":
+            logging.debug("Creating Neopixel display controller")
             from .display.R2NeoPixelController import R2NeoPixelController
             self.display_controller = R2NeoPixelController()
         else:
@@ -120,6 +131,7 @@ class PortalBox:
         ## Turn off power to SSR
         GPIO.output(GPIO_SOLID_STATE_RELAY_PIN, state)
         ## Open interlock
+        #FIXME  Why? What do we do for Pi4?
         if self.is_pi_zero_w:
             GPIO.output(GPIO_INTERLOCK_PIN, state)
         else:
@@ -264,4 +276,3 @@ class PortalBox:
         os.system("echo False > /tmp/running")
         self.set_buzzer(False)
         self.set_display_color()
-        GPIO.cleanup()
