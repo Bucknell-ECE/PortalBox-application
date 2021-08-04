@@ -281,6 +281,8 @@ class PortalBox:
             Flash color across all display pixels multiple times.
         """
         self.wake_display()
+        logging.debug("flash display called")
+        logging.debug("LED TYPE IS {}".format(LEDS))
         if self.display_controller and LEDS == "NEOPIXELS":
             logging.debug("neopixel flash display start?")
             flash_thread = threading.Thread(
