@@ -302,9 +302,9 @@ class PortalBox:
         """
         self.flash_signal = True
         while(self.flash_signal and thread_time() <= duration):
-            self.display_controller.set_display_color(bytes.fromhex(color), False)
+            self.set_display_color(color, False)
             #self.buzz_tone(500,0.1)
-            self.display_controller.set_display_color(bytes.fromhex(end_color), False)
+            self.set_display_color(end_color, False)
             if(not self.flash_signal):
                 break
             sleep(duration/flashes)
