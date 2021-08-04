@@ -307,7 +307,7 @@ class PortalBox:
             self.set_display_color(end_color, False)
             if(not self.flash_signal):
                 break
-            sleep(duration/flashes)
+            sleep((duration/1000)/flashes)
 
 
 
