@@ -254,7 +254,6 @@ class PortalBox:
         '''
         self.wake_display()
         if( stop_flashing ):
-            logging.debug("should stop flashing")
             self.stop_flashing()
         if self.display_controller:
             self.display_controller.set_display_color(bytes.fromhex(color))
@@ -280,10 +279,7 @@ class PortalBox:
             Flash color across all display pixels multiple times.
         """
         self.wake_display()
-        logging.debug("flash display called")
-        logging.debug("LED TYPE IS {}".format(self.led_type))
         if self.display_controller and self.led_type == "NEOPIXELS":
-            logging.debug("neopixel flash display start?")
             flash_thread = threading.Thread(
                 target = self.flash_thread,
                 args = (color, duration, flashes, end_color,),
@@ -307,7 +303,6 @@ class PortalBox:
             self.set_display_color(color, False)
             #self.buzz_tone(500,0.1)
             self.set_display_color(end_color, False)
-            logging.debug(self.flash_signal)
             if(not self.flash_signal):
                 break
             sleep((duration/1000)/flashes)
