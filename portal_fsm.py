@@ -96,9 +96,27 @@ class Setup(State):
         logging.info("Starting setup")
         self.service.box.set_display_color(self.service.settings["display"]["setup_color"])
         try:
-            self.service.connect_to_database()
-            self.service.connect_to_email()
-            self.service.get_equipment_role()
+            try:
+                self.service.connect_to_database()
+            except Exception as e:
+                raise e
+
+            self.service.box.set_display_color(self.service.settings["display"]["setup_color_db"])
+
+            try:
+                self.service.connect_to_email()
+            except Exception as e:
+                raise e
+
+            self.service.box.set_display_color(self.service.settings["display"]["setup_color_email"])
+
+            try:
+                self.service.get_equipment_role()
+            except Exception as e:
+                raise e
+
+            self.service.box.set_display_color(self.service.settings["display"]["setup_color_role"])
+
             self.timeout_delta = timedelta(minutes = self.service.timeout_minutes)
             self.grace_delta = timedelta(seconds = self.service.settings.getint("user_exp","grace_period"))
             self.flash_rate = self.service.settings.getint("display","flash_rate")
@@ -108,7 +126,7 @@ class Setup(State):
         except Exception as e:
             raise(e)
             logging.error("Unable to complete setup exception raised: \n\t{}".format(e))
-            self.next_state(Shutdown, input_data)
+            #self.next_state(Shutdown, input_data)
 
 
 
@@ -260,7 +278,7 @@ class RunningNoCard(State):
         if(input_data["card_id"] > 0):
             self.next_state(RunningUnknownCard, input_data)
             self.service.box.stop_buzzer(stop_beeping = True)
-            
+
         if(self.grace_expired() or input_data["button_pressed"]):
             self.next_state(AccessComplete, input_data)
             self.service.box.stop_buzzer(stop_beeping = True)
@@ -287,7 +305,7 @@ class RunningTimeout(State):
         if(input_data["button_pressed"]):
             self.next_state(RunningUnknownCard, input_data)
             self.service.box.stop_buzzer(stop_beeping = True)
-        
+
         if(input_data["card_id"] <= 0):
             self.next_state(AccessComplete, input_data)
             self.service.box.stop_buzzer(stop_beeping = True)

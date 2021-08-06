@@ -112,19 +112,19 @@ class PortalBoxApplication():
         return mac[0:17]
 
     def get_equipment_role(self):
-
-
-
+        """
+        Gets the equipments role from the database with the given mac address
+        """
         # Determine what we are
         profile = (-1,)
         while profile[0] < 0:
             # Step 1 Figure out our identity
             logging.debug("Attempting to get mac address")
-            mac_address = self.getmac("wlan0").replace(":","") 
+            mac_address = self.getmac("wlan0").replace(":","")
             ##format(, "x")
             #mac_address = format(get_mac_address(), "x")
             logging.debug("Successfully got mac address: {}".format(mac_address))
-            
+
             profile = self.db.get_equipment_profile(mac_address)
             if profile[0] < 0:
                 sleep(5)
@@ -222,7 +222,7 @@ class PortalBoxApplication():
                 self.location))
         except Exception as e:
             logging.error("{}".format(e))
-            
+
     def send_user_email_proxy(self, auth_id):
         '''
         Sends the user an email when they have left a proxy card in the machine
@@ -259,7 +259,7 @@ class PortalBoxApplication():
         self.box.cleanup()
         os.system("echo service_exit > /tmp/boxactivity")
         os.system("echo False > /tmp/running")
-        
+
         if self.equipment_id:
             logging.info("Logging exit-while-running to DB")
             self.db.log_shutdown_status(self.equipment_id, False)
