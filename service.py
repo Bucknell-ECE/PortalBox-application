@@ -1,6 +1,10 @@
 #!python3
 
 """
+2022-03-04 Version   KJHass
+  - Fix bug when handling valid training card that is not a training card
+    for THIS EQUIPMENT
+
 2021-08-04 Version   KJHass
   - Make beeping a little less annoying when a card is removed
 
@@ -420,7 +424,7 @@ class PortalBoxApplication:
                             self.authorized_uid = uid
                             break
                         else:
-                            logging.info("Training card NOT authorized for %s",
+                            logging.info("Training card %s NOT authorized for %s",
                                       uid, self.equipment_type)
 
             grace_count += 1
