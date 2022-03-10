@@ -139,6 +139,7 @@ class PortalBoxApplication():
             self.equipment_type = profile[2]
             self.location = profile[4]
             self.timeout_minutes = profile[5]
+        
         logging.info("Discovered identity. Type: %s(%s) Timeout: %s m",
             self.equipment_type,
             self.equipment_type_id,
@@ -160,13 +161,10 @@ class PortalBoxApplication():
                     pressed since the last time it was checked
         """
 
-        #Reads the card twice, since the reader fails to read the card every
-        #   other time
+        #Check for a card and get its ID
         card_id = self.box.read_RFID_card()
-        if(card_id <= 0):
-            card_id = self.box.read_RFID_card()
 
-        #If a card is present, and its different than the old one
+        #If a card is present, and old_input_data showed either no card present, or a different card present
         if(card_id > 0 and card_id != old_input_data["card_id"]):
             new_input_data = {
                 "card_id": card_id,
@@ -175,6 +173,12 @@ class PortalBoxApplication():
                 "user_authority_level": self.db.is_user_trainer(card_id),
                 "button_pressed": self.box.has_button_been_pressed()
             }
+
+            #Log the card reading with the card type and ID
+            logging.info("Card of type: %s with ID: %d was read",
+                new_input_data["card_type"],
+                new_input_data["card_id"])
+
         #If no card is present, just update the button
         elif(card_id <= 0):
             new_input_data = {
@@ -185,6 +189,7 @@ class PortalBoxApplication():
                 "button_pressed": self.box.has_button_been_pressed()
             }
         #Else just use the old data and update the button
+        #ie, if there is a card, but its the same as before
         else:
             new_input_data = old_input_data
             new_input_data["button_pressed"] = self.box.has_button_been_pressed()
@@ -313,10 +318,8 @@ if __name__ == "__main__":
     # Create finite state machine
     fsm = fsm.Setup(service, input_data)
 
-    # card_reader_thread = threading.Thread(target = service.read_card,daemon = True)
-    # card_reader_thread.start()
-    # Run service
 
+    # Run service
     logging.debug("Running the FSM")
     service.running = True
     while service.running:
@@ -329,7 +332,7 @@ if __name__ == "__main__":
 
     # Cleanup and exit
     os.system("echo False > /tmp/running")
-    #service.box.cleanup()
+    #service.box.cleanup() ##TODO: Why is this commented out? 
     logging.info("Shutting down logger")
     logging.shutdown()
 

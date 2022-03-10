@@ -59,29 +59,30 @@ class State(object):
 
 
     def timeout_expired(self):
-      """
-      Determines whether or not the timeout period has expired
-      @return a boolean which is True when the timeout period has expired
-      """
-      if (
-            self.service.timeout_minutes > 0 and # Not infinite
-            (datetime.now() - self.timeout_start) > self.timeout_delta # timed out
-        ):
-          return True
-      else:
-          return False
+        """
+        Determines whether or not the timeout period has expired
+        @return a boolean which is True when the timeout period has expired
+        """
+        if(
+            self.service.timeout_minutes > 0 and # The timeout period isn't infinite
+            (datetime.now() - self.timeout_start) > self.timeout_delta # And that its actaully timed out
+          ):
+            logging.debug("Grace period expired with time passed = {}".format((datetime.now() - self.grace_start)))
+            return True
+        else:
+            return False
 
 
     def grace_expired(self):
-      """
-      Determines whether or not the grace period has expired
-      @return a boolean which is True when the grace period has expired
-      """
-      if((datetime.now() - self.grace_start) > self.grace_delta):
-          logging.debug("time passed: {}".format((datetime.now() - self.grace_start)))
-          return True
-      else:
-          return False
+        """
+        Determines whether or not the grace period has expired
+        @return a boolean which is True when the grace period has expired
+        """
+        if((datetime.now() - self.grace_start) > self.grace_delta):
+            logging.debug("Grace period expired with time passed = {}".format((datetime.now() - self.grace_start)))
+            return True
+        else:
+            return False
 
 class Setup(State):
     """
@@ -124,9 +125,9 @@ class Setup(State):
             self.service.box.buzz_tone(500,.2)
             #self.service.box.play_song("/opt/portal-box/portalbox/RickRoll.txt")
         except Exception as e:
-            raise(e)
             logging.error("Unable to complete setup exception raised: \n\t{}".format(e))
-            #self.next_state(Shutdown, input_data)
+            self.next_state(Shutdown, input_data)
+            raise(e)
 
 
 
@@ -291,6 +292,7 @@ class RunningNoCard(State):
             self.grace_delta.seconds * 1000,
             int(self.grace_delta.seconds * self.flash_rate)
             )
+        
         self.service.box.start_beeping(
             800,
             self.grace_delta.seconds * 1000,
@@ -313,8 +315,6 @@ class RunningTimeout(State):
         if(self.grace_expired()):
             self.next_state(IdleAuthCard, input_data)
             self.service.box.stop_buzzer(stop_beeping = True)
-
-
 
     def on_enter(self, input_data):
         logging.info("Machine timout, grace period started")
@@ -369,7 +369,7 @@ class RunningProxyCard(State):
 
 class RunningTrainingCard(State):
     """
-    runs the machine in the training mode
+    Runs the machine in the training mode
     """
     def __call__(self, input_data):
         if(input_data["card_id"] <= 0):
