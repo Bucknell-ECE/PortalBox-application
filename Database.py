@@ -352,6 +352,41 @@ class Database:
             logging.error("{}".format(err))
 
 
+    def get_card_details(self, card_id, equipment_type_id):
+        '''
+        This function gets the pertinant details about a card from the database, only connecting to it once
+        These are returned in a dictionary 
+        Returns: {
+            "user_is_authorized": true/false //Whether or not the user is authorized for this equipment
+            "card_type": CardType //The type of card
+            "user_authority_level": int //Returns if the user is a normal user, trainer, or admin
+            }
+        '''
+        logging.debug("Starting to get user details for card with ID %d", card_id)
+        connection = self._connection
+        details = {
+                "user_is_authorized": False,
+                "card_type" : None,
+                "user_authority_level": 0
+                }
+        try:
+            if self.use_persistent_connection:
+                if not connection.is_connected():
+                    connection = self._reconnect()
+            else:
+                connection = self._connect()
+                
+            details["user_is_authorized"] = self.is_user_authorized_for_equipment_type_given_connection(card_id, equipment_type_id, connection)
+            details["card_type"] = self.get_card_type_given_connection(card_id, connection)
+            details["user_authority_level"] =  self.is_user_trainer_given_connection(card_id, connection)
+
+
+            if not self.use_persistent_connection:
+                connection.close()
+        except mysql.connector.Error as err:
+            logging.error("{}".format(err))
+        return details
+
     def is_user_authorized_for_equipment_type(self, card_id, equipment_type_id):
         '''
         Check if card holder identified by card_id is authorized for the
@@ -416,6 +451,60 @@ class Database:
         logging.info("Found card with ID: %d has is_authorized = %r",card_id,is_authorized)
         return is_authorized
 
+    def is_user_authorized_for_equipment_type_given_connection(self, card_id, equipment_type_id, connection):
+        '''
+        Check if card holder identified by card_id is authorized for the
+        equipment type identified by equipment_type_id
+        '''
+        is_authorized = False
+        try:
+            if self.is_user_active_given_connection(card_id, connection) == False:
+                return False
+            
+            cursor = connection.cursor()
+            if self.requires_training and self.requires_payment:
+                # check balance
+                query = ("SELECT get_user_balance_for_card(%s)")
+                cursor.execute(query, (card_id,))
+                (balance,) = cursor.fetchone()
+                if 0.0 < balance:
+                    # balance okay check authorization
+                    query = ("SELECT count(u.id) FROM users_x_cards AS u "
+                    "INNER JOIN authorizations AS a ON a.user_id= u.user_id "
+                    "WHERE u.card_id = %s AND a.equipment_type_id = %s")
+                    cursor.execute(query, (card_id, equipment_type_id))
+                    (count,) = cursor.fetchone()
+                    if 0 < count:
+                        is_authorized = True
+                else:
+                    is_authorized = False
+            elif self.requires_training and not self.requires_payment:
+                query = ("SELECT count(u.id) FROM users_x_cards AS u "
+                "INNER JOIN authorizations AS a ON a.user_id= u.user_id "
+                "WHERE u.card_id = %s AND a.equipment_type_id = %s")
+                cursor.execute(query, (card_id, equipment_type_id))
+                (count,) = cursor.fetchone()
+                if 0 < count:
+                    is_authorized = True
+            elif not self.requires_training and self.requires_payment:
+                # check balance
+                query = ("SELECT get_user_balance_for_card(%s)")
+                cursor.execute(query, (card_id,))
+                (balance,) = cursor.fetchone()
+                if 0.0 < balance:
+                    is_authorized = True
+                else:
+                    is_authorized = False
+            else:
+                # we don't require payment or training, user is implicitly authorized
+                is_authorized = True
+
+            cursor.close()
+        except mysql.connector.Error as err:
+            logging.error("{}".format(err))
+        logging.info("Found card with ID: %d has is_authorized = %r",card_id,is_authorized)
+        return is_authorized
+
     def get_card_type(self, id):
         '''
         Get the type of the card identified by id
@@ -449,6 +538,30 @@ class Database:
 
         return CardType(type_id)
     
+    def get_card_type_given_connection(self, id, connection):
+        '''
+        Get the type of the card identified by id
+
+        @returns a CardType enum:
+            with -1 for card not found, 1 for shutdown card,
+            2 for proxy card, 3 for training card, and 4 for user card
+        '''
+        type_id = -1
+        logging.debug("Getting card type from database")
+        try:
+            query = ("SELECT type_id FROM cards WHERE id = %s")
+
+            cursor = connection.cursor(buffered = True) # we want rowcount to be available
+            cursor.execute(query, (id,))
+
+            if 0 < cursor.rowcount:
+                (type_id,) = cursor.fetchone()
+            cursor.close()
+        except mysql.connector.Error as err:
+            logging.error("{}".format(err))
+
+        return CardType(type_id)
+
     def is_user_active(self, id):
         """
         Returns whether or not the user is active
@@ -477,6 +590,31 @@ class Database:
             cursor.close()
             if not self.use_persistent_connection:
                 connection.close()
+        except mysql.connector.Error as err:
+            logging.error("{}".format(err))
+
+        return is_user_active     
+
+
+    def is_user_active_given_connection(self, id, connection):
+        """
+        Returns whether or not the user is active
+        """
+        is_user_active = False
+        
+        logging.debug("Determining whether a user is active from database")
+
+        try:
+            query = ("SELECT u.is_active FROM users AS u INNER JOIN users_x_cards AS uxc ON uxc.user_id = u.id WHERE uxc.card_id = %s;")
+            
+            cursor = connection.cursor(buffered = True)
+            cursor.execute(query, (id,))
+            
+            if 0 < cursor.rowcount:
+                (is_user_active,) = cursor.fetchone()
+                logging.debug("IS USER ACTIVE: {}".format(is_user_active))
+
+            cursor.close()
         except mysql.connector.Error as err:
             logging.error("{}".format(err))
 
@@ -615,3 +753,31 @@ class Database:
             return 0
         return access_level[0]
         
+    def is_user_trainer_given_connection(self, id, connection):
+        '''
+        Determine whether a particular user is a trainer or admin
+
+        Get the management_portal_access_level from the database. This is
+        an integer. A value of 1 is a normal user, 2 is a trainer, and 3
+        is an admin.
+
+        @return, True or False
+        '''
+
+        logging.debug("Determining if a user is a trainer or admin from database")
+
+        try:
+
+            query = ("SELECT role_id FROM users_x_cards AS c JOIN users AS u ON u.id = c.user_id WHERE c.card_id = %s")
+
+            cursor = connection.cursor()
+            cursor.execute(query, (id,))
+
+            access_level = cursor.fetchone()
+            cursor.close()
+            if access_level is None:
+                access_level = [0]
+        except mysql.connector.Error as err:
+            logging.error("{}".format(err))
+            return 0
+        return access_level[0]
