@@ -171,7 +171,11 @@ class PortalBox:
         Use GPIO event detection to determine if the button has been pressed
         since the last call to this method
         '''
-        return GPIO.event_detected(GPIO_BUTTON_PIN)
+        button_pressed = GPIO.event_detected(GPIO_BUTTON_PIN)
+        #commented out since it spams the logs if its kept on
+        #logging.debug(f"Checking if button has been pressed since last checking. Status {button_pressed}")
+
+        return button_pressed
 
 
     def read_RFID_card(self):

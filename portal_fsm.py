@@ -280,7 +280,13 @@ class RunningNoCard(State):
             self.next_state(RunningUnknownCard, input_data)
             self.service.box.stop_buzzer(stop_beeping = True)
 
-        if(self.grace_expired() or input_data["button_pressed"]):
+        if(self.grace_expired()):
+            logging.debug("Exiting Grace period because the grace period expired")
+            self.next_state(AccessComplete, input_data)
+            self.service.box.stop_buzzer(stop_beeping = True)
+                
+        if(input_data["button_pressed"]):
+            logging.debug("Exiting Grace period because button was pressed")
             self.next_state(AccessComplete, input_data)
             self.service.box.stop_buzzer(stop_beeping = True)
 

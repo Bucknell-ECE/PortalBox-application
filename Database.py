@@ -107,7 +107,7 @@ class Database:
         '''
         registered = False
         connection = self._connection
-
+        logging.debug(f"Checking if portal box with Max Address {max_address}")
         try:
             if self.use_persistent_connection:
                 if not connection.is_connected():
@@ -222,7 +222,7 @@ class Database:
         @param equipment_id: The ID assigned to the portal box
         '''
         connection = self._connection
-
+        logging.debug("Logging with the database that this portalbox has started up")
         try:
             if self.use_persistent_connection:
                 if not connection.is_connected():
@@ -254,6 +254,7 @@ class Database:
             or a falsy value if shutdown is not related to a card
         '''
         connection = self._connection
+        logging.debug("Logging with the database that this box has shutdown")
 
         try:
             if self.use_persistent_connection:
@@ -293,6 +294,8 @@ class Database:
         @param successful: If login was successful (user is authorized)
         '''
         connection = self._connection
+        
+        logging.debug("Logging with database an access attempt")
 
         try:
             if self.use_persistent_connection:
@@ -323,6 +326,8 @@ class Database:
         @param successful: If login was successful (user is authorized)
         '''
         connection = self._connection
+        
+        logging.debug("Logging with database an access completion")
 
         try:
             if self.use_persistent_connection:
@@ -354,7 +359,7 @@ class Database:
         '''
         is_authorized = False
         connection = self._connection
-
+        logging.debug("Starting to get DB info for card with ID: %d", card_id)
         try:
             if self.use_persistent_connection:
                 if not connection.is_connected():
@@ -408,7 +413,7 @@ class Database:
                 connection.close()
         except mysql.connector.Error as err:
             logging.error("{}".format(err))
-
+        logging.info("Found card with ID: %d has is_authorized = %r",card_id,is_authorized)
         return is_authorized
 
     def get_card_type(self, id):
@@ -421,7 +426,7 @@ class Database:
         '''
         type_id = -1
         connection = self._connection
-
+        logging.debug("Getting card type from database")
         try:
             if self.use_persistent_connection:
                 if not connection.is_connected():
@@ -450,6 +455,8 @@ class Database:
         """
         is_user_active = False
         connection = self._connection
+        
+        logging.debug("Determining whether a user is active from database")
 
         try:
             if self.use_persistent_connection:
@@ -483,6 +490,8 @@ class Database:
         valid = False
         connection = self._connection
 
+        logging.debug("Checking Training card as valid")
+
         try:
             if self.use_persistent_connection:
                 if not connection.is_connected():
@@ -515,6 +524,8 @@ class Database:
         '''
         user = (None, None)
         connection = self._connection
+        
+        logging.debug("Getting user information from card ID")
 
         try:
             if self.use_persistent_connection:
@@ -545,6 +556,8 @@ class Database:
         name = "Unknown"
         connection = self._connection
         
+        logging.debug("Getting equipment name from database")
+
         #try:
         if self.use_persistent_connection:
             if not connection.is_connected():
@@ -576,6 +589,8 @@ class Database:
         @return, True or False
         '''
         connection = self._connection
+
+        logging.debug("Determining if a user is a trainer or admin from database")
 
         try:
             if self.use_persistent_connection:
