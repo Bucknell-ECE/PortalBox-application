@@ -139,11 +139,13 @@ class PortalBoxApplication():
             self.equipment_type = profile[2]
             self.location = profile[4]
             self.timeout_minutes = profile[5]
+            self.allow_proxy = profile[6]
         
-        logging.info("Discovered identity. Type: %s(%s) Timeout: %s m",
+        logging.info("Discovered identity. Type: %s(%s) Timeout: %s m Allows Proxy: %d",
             self.equipment_type,
             self.equipment_type_id,
-            self.timeout_minutes)
+            self.timeout_minutes,
+            self.allow_proxy)
         self.db.log_started_status(self.equipment_id)
 
 

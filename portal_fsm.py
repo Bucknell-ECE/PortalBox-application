@@ -120,6 +120,7 @@ class Setup(State):
 
             self.timeout_delta = timedelta(minutes = self.service.timeout_minutes)
             self.grace_delta = timedelta(seconds = self.service.settings.getint("user_exp","grace_period"))
+            self.allow_proxy = self.service.allow_proxy
             self.flash_rate = self.service.settings.getint("display","flash_rate")
             self.next_state(IdleNoCard, input_data)
             self.service.box.buzz_tone(500,.2)
@@ -204,10 +205,11 @@ class RunningUnknownCard(State):
         logging.debug(self.user_authority_level)
         logging.debug(self.proxy_id)
         logging.debug((self.training_id <= 0 or self.training_id == input_data["card_id"]))
-        #Proxy card, AND not coming from training mode
+        #Proxy card, AND not coming from training mode, AND the machine allows proxy cards
         if(
             input_data["card_type"] == CardType.PROXY_CARD and
-            self.training_id <= 0
+            self.training_id <= 0 and 
+            self.allow_proxy == 1
           ):
             self.next_state(RunningProxyCard, input_data)
         elif(input_data["card_id"] == self.auth_user_id):

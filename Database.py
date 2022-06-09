@@ -174,7 +174,7 @@ class Database:
         '''
         logging.debug("Querying database for equipment profile")
 
-        profile = (-1, -1, None, -1, None, -1)
+        profile = (-1, -1, None, -1, None, -1, -1)
         connection = self._connection
 
         try:
@@ -185,11 +185,12 @@ class Database:
                 connection = self._connect()
 
             # Query MySQL for RID by sending MAC Address
-            query = ("SELECT e.id, e.type_id, t.name, e.location_id, l.name, e.timeout "
+            query = ("SELECT e.id, e.type_id, t.name, e.location_id, l.name, e.timeout, t.allow_proxy "
                 "FROM equipment AS e "
                 "INNER JOIN equipment_types AS t ON e.type_id = t.id "
                 "INNER JOIN locations AS l ON e.location_id =  l.id "
                 "WHERE e.mac_address = %s")
+            logging.debug("Sending this \/ query to the database \n {}".format(query))
             cursor = connection.cursor(buffered = True) # we want rowcount to be available
             cursor.execute(query, (mac_address,))
 
