@@ -205,13 +205,17 @@ class RunningUnknownCard(State):
         logging.debug(self.user_authority_level)
         logging.debug(self.proxy_id)
         logging.debug((self.training_id <= 0 or self.training_id == input_data["card_id"]))
-        #Proxy card, AND not coming from training mode, AND the machine allows proxy cards
+        #Proxy card, AND not coming from training mode
         if(
             input_data["card_type"] == CardType.PROXY_CARD and
-            self.training_id <= 0 and 
-            self.allow_proxy == 1
+            self.training_id <= 0 
           ):
-            self.next_state(RunningProxyCard, input_data)
+            #If the machine allows proxy cards then go into proxy mode
+            if(self.allow_proxy == 1):
+                self.next_state(RunningProxyCard, input_data)
+            #Otherwise go into timeout
+            else:
+                self.next_state(RunningUnauthCard, input_data)
         elif(input_data["card_id"] == self.auth_user_id):
             self.next_state(RunningAuthUser, input_data)
 
@@ -307,15 +311,56 @@ class RunningNoCard(State):
             int(self.grace_delta.seconds * self.flash_rate)
             )
 
+class RunningUnauthCard(State):
+    """
+    A card type which isn't allowed on this machine has been read, gives the user time to put back their authorized card
+    """
+    def __call__(self, input_data):
+        #Card detected
+        if(
+            input_data["card_id"] > 0 and
+            input_data["card_type"] != CardType.PROXY_CARD
+          ):
+            self.next_state(RunningUnknownCard, input_data)
+            self.service.box.stop_buzzer(stop_beeping = True)
+
+        if(self.grace_expired()):
+            logging.debug("Exiting Running Unauthorized Card because the grace period expired")
+            self.next_state(AccessComplete, input_data)
+            self.service.box.stop_buzzer(stop_beeping = True)
+                
+        if(input_data["button_pressed"]):
+            logging.debug("Exiting  Running Unauthorized Card because button was pressed")
+            self.next_state(AccessComplete, input_data)
+            self.service.box.stop_buzzer(stop_beeping = True)
+
+    def on_enter(self, input_data):
+        logging.info("Unauthorized Card grace period started")
+        logging.info("Card type was {}".format(input_data["card_type"]))
+        self.grace_start = datetime.now()
+        self.service.box.flash_display(
+            self.service.settings["display"]["unauth_card_grace_color"],
+            self.grace_delta.seconds * 1000,
+            int(self.grace_delta.seconds * self.flash_rate)
+            )
+        
+        self.service.box.start_beeping(
+            800,
+            self.grace_delta.seconds * 1000,
+            int(self.grace_delta.seconds * self.flash_rate)
+            )
+
+
 class RunningTimeout(State):
     """
     The machine has timed out, has a grace period before going to the next state
     """
     def __call__(self, input_data):
+        #If the button has been pressed, then re-read the card
         if(input_data["button_pressed"]):
             self.next_state(RunningUnknownCard, input_data)
             self.service.box.stop_buzzer(stop_beeping = True)
-
+        #If the card is removed then finish the accses attempt
         if(input_data["card_id"] <= 0):
             self.next_state(AccessComplete, input_data)
             self.service.box.stop_buzzer(stop_beeping = True)
