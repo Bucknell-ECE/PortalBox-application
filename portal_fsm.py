@@ -319,7 +319,7 @@ class RunningUnauthCard(State):
         #Card detected
         if(
             input_data["card_id"] > 0 and
-            input_data["card_type"] != CardType.PROXY_CARD
+            input_data["card_type"] == self.auth_user_id
           ):
             self.next_state(RunningUnknownCard, input_data)
             self.service.box.stop_buzzer(stop_beeping = True)
