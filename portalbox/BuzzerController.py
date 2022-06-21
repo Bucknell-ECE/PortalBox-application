@@ -16,7 +16,7 @@ import RPi.GPIO as GPIO
 
 #Default values
 DEFAULT_TONE = 800.0
-DEFAULT_DUTY = 50.0
+DEFAULT_DUTY = 10.0
 GPIO_BUZZER_PIN = 33
 
 # The driver runs in an infinite loop, checking for new commands or updating
