@@ -201,10 +201,9 @@ class RunningUnknownCard(State):
     A Card has been read from the no card grace period
     """
     def __call__(self, input_data):
-        logging.debug("is USER{}?".format(input_data["card_type"] == CardType.USER_CARD))
-        logging.debug(self.user_authority_level)
-        logging.debug(self.proxy_id)
-        logging.debug((self.training_id <= 0 or self.training_id == input_data["card_id"]))
+        logging.debug("is USER? {}".format(input_data["card_type"] == CardType.USER_CARD))
+        logging.debug(f"User authority level:{self.user_authority_level}")
+        logging.debug(f"Proxy Id:{self.proxy_id}")
         #Proxy card, AND not coming from training mode
         if(
             input_data["card_type"] == CardType.PROXY_CARD and
@@ -213,7 +212,7 @@ class RunningUnknownCard(State):
             #If the machine allows proxy cards then go into proxy mode
             if(self.allow_proxy == 1):
                 self.next_state(RunningProxyCard, input_data)
-            #Otherwise go into timeout
+            #Otherwise go into a grace period 
             else:
                 self.next_state(RunningUnauthCard, input_data)
         elif(input_data["card_id"] == self.auth_user_id):
@@ -258,6 +257,7 @@ class RunningAuthUser(State):
         self.auth_user_id = input_data["card_id"]
         self.user_authority_level = input_data["user_authority_level"]
         self.service.db.log_access_attempt(input_data["card_id"], self.service.equipment_id, True)
+
 
 
 
@@ -313,13 +313,13 @@ class RunningNoCard(State):
 
 class RunningUnauthCard(State):
     """
-    A card type which isn't allowed on this machine has been read, gives the user time to put back their authorized card
+    A card type which isn't allowed on this machine has been readi while the machine is running, gives the user time to put back their authorized card
     """
     def __call__(self, input_data):
-        #Card detected
+        #Card detected and its the same card that was using the machine before the unauth card was inserted 
         if(
             input_data["card_id"] > 0 and
-            input_data["card_type"] == self.auth_user_id
+            input_data["card_id"] == self.auth_user_id
           ):
             self.next_state(RunningUnknownCard, input_data)
             self.service.box.stop_buzzer(stop_beeping = True)
@@ -338,6 +338,7 @@ class RunningUnauthCard(State):
         logging.info("Unauthorized Card grace period started")
         logging.info("Card type was {}".format(input_data["card_type"]))
         self.grace_start = datetime.now()
+        self.service.box.set_display_color(self.service.settings["display"]["unauth_card_grace_color"])
         self.service.box.flash_display(
             self.service.settings["display"]["unauth_card_grace_color"],
             self.grace_delta.seconds * 1000,
