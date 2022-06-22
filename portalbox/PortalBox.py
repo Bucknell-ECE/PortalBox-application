@@ -305,7 +305,6 @@ class PortalBox:
         self.flash_signal = True
         while(self.flash_signal and thread_time() <= duration):
             self.set_display_color(color, False)
-            #self.buzz_tone(500,0.1)
             self.set_display_color(end_color, False)
             if(not self.flash_signal):
                 break
@@ -356,6 +355,6 @@ class PortalBox:
         logging.info("PortalBox.cleanup() starts")
         os.system("echo False > /tmp/running")
         self.buzzer_controller.shutdown_buzzer()
-        self.display_controller.shutdown_display()
+        self.set_display_color("00 00 00", False)
         GPIO.cleanup()
         logging.info("Buzzer, display, and GPIO should be turned off")
