@@ -16,7 +16,7 @@ import RPi.GPIO as GPIO
 
 #Default values
 DEFAULT_TONE = 800.0
-DEFAULT_DUTY = 10.0
+DEFAULT_DUTY = 50.0
 GPIO_BUZZER_PIN = 33
 
 # The driver runs in an infinite loop, checking for new commands or updating
@@ -116,6 +116,7 @@ class Buzzer:
         GPIO.setup(self.buzzer_pin, GPIO.OUT)
         if(self.pwm_buzzer):
             self.buzzer = GPIO.PWM(self.buzzer_pin, DEFAULT_TONE)
+            self.buzzer.ChangeDutyCycle(DEFAULT_DUTY)
             self.buzzer.stop()
         
         #Whether it is currently playing a sound
@@ -152,6 +153,7 @@ class Buzzer:
         if(self.pwm_buzzer):
             self.buzzer.ChangeFrequency(freq)
             self.buzzer.start(duty)
+            self.buzzer.ChangeDutyCycle(duty)
         else:
             GPIO.output(self.buzzer_pin, True)
 

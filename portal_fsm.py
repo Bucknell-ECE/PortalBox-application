@@ -212,11 +212,15 @@ class RunningUnknownCard(State):
             #If the machine allows proxy cards then go into proxy mode
             if(self.allow_proxy == 1):
                 self.next_state(RunningProxyCard, input_data)
+                self.service.box.stop_buzzer(stop_beeping = True)
             #Otherwise go into a grace period 
             else:
                 self.next_state(RunningUnauthCard, input_data)
+                self.service.box.stop_buzzer(stop_beeping = True)
+
         elif(input_data["card_id"] == self.auth_user_id):
             self.next_state(RunningAuthUser, input_data)
+            self.service.box.stop_buzzer(stop_beeping = True)
 
         #User card, AND
         #The box was intially authorized by a trainer or admin AND
@@ -232,8 +236,14 @@ class RunningUnknownCard(State):
             not self.service.get_user_auths(input_data["card_id"])
             ):
             self.next_state(RunningTrainingCard, input_data)
-        else:
-            self.next_state(IdleUnknownCard, input_data)
+            self.service.box.stop_buzzer(stop_beeping = True)
+
+        elif(self.grace_expired()):
+            logging.debug("Exiting Grace period because the grace period expired")
+            self.next_state(AccessComplete, input_data)
+            self.service.box.stop_buzzer(stop_beeping = True)
+#        else:
+#            self.next_state(AccessComplete, input_data)
 
 class RunningAuthUser(State):
     """
@@ -284,7 +294,7 @@ class RunningNoCard(State):
         #Card detected
         if(input_data["card_id"] > 0):
             self.next_state(RunningUnknownCard, input_data)
-            self.service.box.stop_buzzer(stop_beeping = True)
+           # self.service.box.stop_buzzer(stop_beeping = True)
 
         if(self.grace_expired()):
             logging.debug("Exiting Grace period because the grace period expired")
@@ -391,16 +401,21 @@ class IdleAuthCard(State):
     """
     def __call__(self, input_data):
         if(input_data["card_id"] <= 0):
-            self.next_state(AccessComplete, input_data)
+            self.next_state(IdleNoCard, input_data)
 
     def on_enter(self, input_data):
         self.service.box.set_equipment_power_on(False)
+        self.service.db.log_access_completion(input_data["card_id"], self.service.equipment_id)
         if(self.proxy_id > 0):
             self.service.send_user_email_proxy
             (input_data["card_id"])
         else:
             self.service.send_user_email(input_data["card_id"])
         self.service.box.set_display_color(self.service.settings["display"]["timeout_color"])
+        self.proxy_id = 0
+        self.training_id = 0
+        self.auth_user_id = 0
+        self.user_authority_level = 0
 
 class RunningProxyCard(State):
     """
