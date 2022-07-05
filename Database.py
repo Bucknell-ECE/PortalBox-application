@@ -9,6 +9,7 @@
 
 # from standard library
 import logging
+import requests
 
 # third party libraries
 import mysql.connector
@@ -364,12 +365,25 @@ class Database:
             }
         '''
         logging.debug("Starting to get user details for card with ID %d", card_id)
+        url = "https://makerportal-dev.bucknell.edu/api/testapi.php"
+        data = {
+                "mode" : "get_card_details",
+                "card_id" : card_id,
+                "equipment_id" : equipment_type_id
+                }
+        response = requests.get(url,params=data).json()[0]
+
+        
+
+        
+
         connection = self._connection
         details = {
-                "user_is_authorized": False,
-                "card_type" : None,
-                "user_authority_level": 0
+                "user_is_authorized": self.is_user_authorized_for_equipment_type(response),
+                "card_type" : CardType(int(response["card_type"])),
+                "user_authority_level": int(response["user_role"])
                 }
+        '''
         try:
             if self.use_persistent_connection:
                 if not connection.is_connected():
@@ -386,16 +400,44 @@ class Database:
                 connection.close()
         except mysql.connector.Error as err:
             logging.error("{}".format(err))
+        '''
         return details
 
-    def is_user_authorized_for_equipment_type(self, card_id, equipment_type_id):
+    def is_user_authorized_for_equipment_type(self, card_details):
         '''
         Check if card holder identified by card_id is authorized for the
         equipment type identified by equipment_type_id
         '''
         is_authorized = False
-        connection = self._connection
-        logging.debug("Starting to get DB info for card with ID: %d", card_id)
+        balance = float(card_details["user_balance"])
+        user_auth = int(card_details["user_auth"])
+        if int(card_details["user_active"]) != 1:
+            return False
+            
+
+        if self.requires_training and self.requires_payment:
+            if balance > 0.0 and user_auth:
+                is_authorized = True
+            else:
+                is_authorized = False
+        elif self.requires_training and not self.requires_payment:
+            if user_auth:
+                is_authorized = True
+            else:
+                is_authorized = False
+        elif not self.requires_training and self.requires_payment:
+            if balance > 0.0:
+                is_authorized = True
+            else: 
+                is_authorized = False
+        else:
+            is_authorized = True
+
+    
+
+
+        '''
+        logging.debug("Starting to get DB info for card with ID:%d", card_id)
         try:
             if self.use_persistent_connection:
                 if not connection.is_connected():
@@ -450,6 +492,7 @@ class Database:
         except mysql.connector.Error as err:
             logging.error("{}".format(err))
         logging.info("Found card with ID: %d has is_authorized = %r",card_id,is_authorized)
+        '''
         return is_authorized
 
     def is_user_authorized_for_equipment_type_given_connection(self, card_id, equipment_type_id, connection):
