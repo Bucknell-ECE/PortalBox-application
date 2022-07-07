@@ -49,6 +49,9 @@ class Database:
         self.api_url= f"{settings['website']}/api/{settings['api']}"
         self.api_header = {"Authorization" : f"Bearer {settings['bearer_token']}"}
 
+        self.request_session = requests.Session()
+        self.request_session.headers.update(self.api_header)        
+
         # Add in the optional keys
         if 'port' in settings:
             self.connection_settings['port'] = settings['port']
@@ -58,14 +61,14 @@ class Database:
                 self.use_persistent_connection = False
 
         logging.debug("DB Connection Settings: %s", self.connection_settings)
-
+        '''
         if self.use_persistent_connection:
             self._connection = mysql.connector.connect(**self.connection_settings)
             if self._connection:
                 logging.debug("Initialized persistent DB connection")
             else:
                 logging.error("Failed to initialize persistent connection")
-
+        ''' 
 
     def __del__(self):
         '''
@@ -118,7 +121,7 @@ class Database:
                 "mac_adr" : mac_address
                 }
 
-        response = requests.get(self.api_url, headers = self.api_header, params = params)
+        response = self.request_session.get(self.api_url, params = params)
 
         logging.debug(f"Got response from server\nstatus: {response.status_code}\nbody: {response.text}")
         
@@ -166,7 +169,7 @@ class Database:
                 "mac_adr" : mac_address
                 }
 
-        response = requests.put(self.api_url, headers = self.api_header, params = params)
+        response = self.request_session.put(self.api_url, params = params)
 
         logging.debug(f"Got response from server\nstatus: {response.status_code}\nbody: {response.text}")
         
@@ -223,7 +226,7 @@ class Database:
                 }
 
 
-        response = requests.get(self.api_url, headers = self.api_header, params = params)
+        response = self.request_session.get(self.api_url, params = params)
 
         logging.debug(f"Got response from server\nstatus: {response.status_code}\nbody: {response.text}")
         
@@ -302,7 +305,7 @@ class Database:
                 }
 
 
-        response = requests.post(self.api_url, headers = self.api_header, params = params)
+        response = self.request_session.post(self.api_url, params = params)
 
         logging.debug(f"Got response from server\nstatus: {response.status_code}\nbody: {response.text}")
         
@@ -349,7 +352,7 @@ class Database:
                 }
 
 
-        response = requests.post(self.api_url, headers = self.api_header, params = params)
+        response = self.request_session.post(self.api_url, params = params)
 
         logging.debug(f"Got response from server\nstatus: {response.status_code}\nbody: {response.text}")
         
@@ -406,7 +409,7 @@ class Database:
                 }
 
 
-        response = requests.post(self.api_url, headers = self.api_header, params = params)
+        response = self.request_session.post(self.api_url, params = params)
 
         logging.debug(f"Got response from server\nstatus: {response.status_code}\nbody: {response.text}")
         logging.debug(f"Took {response.elapsed.total_seconds()}")        
@@ -452,7 +455,7 @@ class Database:
                 }
 
 
-        response = requests.post(self.api_url, headers = self.api_header, params = params)
+        response = self.request_session.post(self.api_url, params = params)
 
         logging.debug(f"Got response from server\nstatus: {response.status_code}\nbody: {response.text}")
         logging.debug(f"Took {response.elapsed.total_seconds()}")        
@@ -502,7 +505,7 @@ class Database:
                 }
 
 
-        response = requests.get(self.api_url, headers = self.api_header, params = params)
+        response = self.request_session.get(self.api_url, params = params)
 
         logging.debug(f"Got response from server\nstatus: {response.status_code}\nbody: {response.text}")
         logging.debug(f"Took {response.elapsed.total_seconds()}")        
@@ -685,7 +688,7 @@ class Database:
                 }
 
 
-        response = requests.get(self.api_url, headers = self.api_header, params = params)
+        response = self.request_session.get(self.api_url, params = params)
 
         logging.debug(f"Got response from server\nstatus: {response.status_code}\nbody: {response.text}")
         
@@ -736,7 +739,7 @@ class Database:
                 }
 
 
-        response = requests.get(self.api_url, headers = self.api_header, params = params)
+        response = self.request_session.get(self.api_url, params = params)
 
         logging.debug(f"Got response from server\nstatus: {response.status_code}\nbody: {response.text}")
         
