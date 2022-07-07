@@ -11,6 +11,8 @@
 import logging
 import requests
 
+import time
+
 # third party libraries
 import mysql.connector
 
@@ -400,14 +402,14 @@ class Database:
                 "mode" : "log_access_attempt",
                 "equipment_id" : equipment_id,
                 "card_id" : card_id,
-                "successful" : successful
+                "successful" : int(successful)
                 }
 
 
         response = requests.post(self.api_url, headers = self.api_header, params = params)
 
         logging.debug(f"Got response from server\nstatus: {response.status_code}\nbody: {response.text}")
-        
+        logging.debug(f"Took {response.elapsed.total_seconds()}")        
         if(response.status_code != 200):
             #If we don't get a succses status code, then return and unouthorized user 
             logging.error(f"API error")
@@ -453,7 +455,7 @@ class Database:
         response = requests.post(self.api_url, headers = self.api_header, params = params)
 
         logging.debug(f"Got response from server\nstatus: {response.status_code}\nbody: {response.text}")
-        
+        logging.debug(f"Took {response.elapsed.total_seconds()}")        
         if(response.status_code != 200):
             #If we don't get a succses status code, then return and unouthorized user 
             logging.error(f"API error")
@@ -503,7 +505,8 @@ class Database:
         response = requests.get(self.api_url, headers = self.api_header, params = params)
 
         logging.debug(f"Got response from server\nstatus: {response.status_code}\nbody: {response.text}")
-        
+        logging.debug(f"Took {response.elapsed.total_seconds()}")        
+
         if(response.status_code != 200):
             #If we don't get a succses status code, then return and unouthorized user 
             logging.error(f"API error")
