@@ -520,29 +520,19 @@ class Database:
                     }
         else:
             response_details = response.json()[0]
-            details = {
-                    "user_is_authorized": self.is_user_authorized_for_equipment_type(response_details),
-                    "card_type" : CardType(int(response_details["card_type"])),
-                    "user_authority_level": int(response_details["user_role"])
-                    }
-        '''
-        try:
-            if self.use_persistent_connection:
-                if not connection.is_connected():
-                    connection = self._reconnect()
+            #Check if the user exists, if not then return default response
+            if(response_details["user_active"] == None or response_details["card_type"] == None or response_details["user_role"] == None):
+                details = {
+                        "user_is_authorized": False,
+                        "card_type" : CardType(0),
+                        "user_authority_level": 0
+                        }
             else:
-                connection = self._connect()
-                
-            details["user_is_authorized"] = self.is_user_authorized_for_equipment_type_given_connection(card_id, equipment_type_id, connection)
-            details["card_type"] = self.get_card_type_given_connection(card_id, connection)
-            details["user_authority_level"] =  self.is_user_trainer_given_connection(card_id, connection)
-
-
-            if not self.use_persistent_connection:
-                connection.close()
-        except mysql.connector.Error as err:
-            logging.error("{}".format(err))
-        '''
+                details = {
+                        "user_is_authorized": self.is_user_authorized_for_equipment_type(response_details),
+                        "card_type" : CardType(int(response_details["card_type"])),
+                        "user_authority_level": int(response_details["user_role"])
+                        }
         return details
 
     def is_user_authorized_for_equipment_type(self, card_details):
@@ -551,8 +541,10 @@ class Database:
         equipment type identified by equipment_type_id
         '''
         is_authorized = False
+
         balance = float(card_details["user_balance"])
         user_auth = int(card_details["user_auth"])
+        
         if int(card_details["user_active"]) != 1:
             return False
             
