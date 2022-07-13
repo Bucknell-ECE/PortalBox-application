@@ -41,6 +41,7 @@ from .MFRC522 import MFRC522
 REVISION_ID_RASPBERRY_PI_0_W = "9000c1"
 
 GPIO_INTERLOCK_PIN = 11
+GPIO_BUTTON_LED_PIN = 31
 GPIO_BUZZER_PIN = 33
 GPIO_BUTTON_PIN = 35
 GPIO_SOLID_STATE_RELAY_PIN = 37
@@ -82,7 +83,9 @@ class PortalBox:
         #Sets up the buzzer controller
         self.buzzer_controller = BuzzerController(GPIO_BUZZER_PIN, settings)
 
-
+        #Set the button LED on for REV 3.x boards
+        GPIO.setup(GPIO_BUTTON_LED_PIN, GPIO.OUT)
+        GPIO.output(GPIO_BUTTON_LED_PIN, GPIO.HIGH)
 
         # Reset the RFID card
         GPIO.setup(GPIO_RFID_NRST_PIN, GPIO.OUT)
