@@ -139,7 +139,7 @@ class Shutdown(State):
     """
     def __call__(self, input_data):
         self.service.box.set_equipment_power_on(False)
-        self.service.shutdown() #logging the shutdown is done in this method
+        self.service.shutdown(input_data["card_id"]) #logging the shutdown is done in this method
 
 
 
@@ -218,6 +218,7 @@ class RunningUnknownCard(State):
                 self.next_state(RunningUnauthCard, input_data)
                 self.service.box.stop_buzzer(stop_beeping = True)
 
+        #If its the same user as before then just go back to auth user
         elif(input_data["card_id"] == self.auth_user_id):
             self.next_state(RunningAuthUser, input_data)
             self.service.box.stop_buzzer(stop_beeping = True)
@@ -233,13 +234,18 @@ class RunningUnknownCard(State):
             self.user_authority_level >= 3 and
             self.proxy_id <= 0 and
             (self.training_id <= 0 or self.training_id == input_data["card_id"]) and
-            not self.service.get_user_auths(input_data["card_id"])
+            not input_data["user_is_authorized"]
             ):
             self.next_state(RunningTrainingCard, input_data)
             self.service.box.stop_buzzer(stop_beeping = True)
 
         elif(self.grace_expired()):
             logging.debug("Exiting Grace period because the grace period expired")
+            self.next_state(AccessComplete, input_data)
+            self.service.box.stop_buzzer(stop_beeping = True)
+
+        if(input_data["button_pressed"]):
+            logging.debug("Exiting Grace period because button was pressed")
             self.next_state(AccessComplete, input_data)
             self.service.box.stop_buzzer(stop_beeping = True)
 #        else:
@@ -264,9 +270,12 @@ class RunningAuthUser(State):
         self.service.box.set_equipment_power_on(True)
         self.service.box.set_display_color(self.service.settings["display"]["auth_color"])
         self.service.box.beep_once()
+
+        #If the card is new ie, not coming from a timeout then don't log this as a new session
+        if self.auth_user_id != input_data["card_id"]:
+            self.service.db.log_access_attempt(input_data["card_id"], self.service.equipment_id, True)
         self.auth_user_id = input_data["card_id"]
         self.user_authority_level = input_data["user_authority_level"]
-        self.service.db.log_access_attempt(input_data["card_id"], self.service.equipment_id, True)
 
 
 
@@ -292,7 +301,7 @@ class RunningNoCard(State):
     """
     def __call__(self, input_data):
         #Card detected
-        if(input_data["card_id"] > 0):
+        if(input_data["card_id"] > 0 and input_data["card_type"] != CardType.INVALID_CARD):
             self.next_state(RunningUnknownCard, input_data)
            # self.service.box.stop_buzzer(stop_beeping = True)
 
@@ -323,7 +332,7 @@ class RunningNoCard(State):
 
 class RunningUnauthCard(State):
     """
-    A card type which isn't allowed on this machine has been readi while the machine is running, gives the user time to put back their authorized card
+    A card type which isn't allowed on this machine has been read while the machine is running, gives the user time to put back their authorized card
     """
     def __call__(self, input_data):
         #Card detected and its the same card that was using the machine before the unauth card was inserted 
@@ -371,7 +380,7 @@ class RunningTimeout(State):
         if(input_data["button_pressed"]):
             self.next_state(RunningUnknownCard, input_data)
             self.service.box.stop_buzzer(stop_beeping = True)
-        #If the card is removed then finish the accses attempt
+        #If the card is removed then finish the access attempt
         if(input_data["card_id"] <= 0):
             self.next_state(AccessComplete, input_data)
             self.service.box.stop_buzzer(stop_beeping = True)
@@ -405,10 +414,10 @@ class IdleAuthCard(State):
 
     def on_enter(self, input_data):
         self.service.box.set_equipment_power_on(False)
-        self.service.db.log_access_completion(input_data["card_id"], self.service.equipment_id)
+        self.service.db.log_access_completion(self.auth_user_id, self.service.equipment_id)
+        #If its a proxy 
         if(self.proxy_id > 0):
-            self.service.send_user_email_proxy
-            (input_data["card_id"])
+            self.service.send_user_email_proxy(self.auth_user_id)
         else:
             self.service.send_user_email(input_data["card_id"])
         self.service.box.set_display_color(self.service.settings["display"]["timeout_color"])
@@ -430,11 +439,14 @@ class RunningProxyCard(State):
     def on_enter(self, input_data):
         self.timeout_start = datetime.now()
         self.training_id = 0
+        
+        #If the same proxy card is being reinserted then don't log it
+        if self.proxy_id != input_data["card_id"]:
+            self.service.db.log_access_attempt(input_data["card_id"], self.service.equipment_id, True)
         self.proxy_id = input_data["card_id"]
         self.service.box.set_equipment_power_on(True)
         self.service.box.set_display_color(self.service.settings["display"]["proxy_color"])
         self.service.box.beep_once()
-        self.service.db.log_access_attempt(input_data["card_id"], self.service.equipment_id, True)
 
 class RunningTrainingCard(State):
     """
@@ -449,8 +461,11 @@ class RunningTrainingCard(State):
     def on_enter(self, input_data):
         self.timeout_start = datetime.now()
         self.proxy_id = 0
+        #If the training card is new and not just reinserted after a grace period
+        if self.training_id != input_data["card_id"]:
+            self.service.db.log_access_attempt(input_data["card_id"], self.service.equipment_id, True)
         self.training_id = input_data["card_id"]
+        
         self.service.box.set_equipment_power_on(True)
         self.service.box.set_display_color(self.service.settings["display"]["training_color"])
         self.service.box.beep_once()
-        self.service.db.log_access_attempt(input_data["card_id"], self.service.equipment_id, True)

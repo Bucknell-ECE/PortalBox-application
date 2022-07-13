@@ -209,10 +209,6 @@ class PortalBoxApplication():
         ## TODO: have this actually check for the local database
         if(True):
             return self.db.is_user_authorized_for_equipment_type(card_id, self.equipment_type_id)
-        else:
-            #Unpickle the local database and see if the equipment_type_id is in it
-            user_auths = pickle.load(open(os.path.join(sys.path[0], LOCAL_DATABASE_FILE_PATH),"rb"))
-            return equipment_type_id in user_auths[card_id][1]
 
 
     def send_user_email(self, auth_id):
@@ -260,7 +256,7 @@ class PortalBoxApplication():
 
 
 
-    def shutdown(self):
+    def shutdown(self, card_id = 1):
         '''
         Stops the program
         '''
@@ -271,7 +267,7 @@ class PortalBoxApplication():
 
         if self.equipment_id:
             logging.info("Logging exit-while-running to DB")
-            self.db.log_shutdown_status(self.equipment_id, False)
+            self.db.log_shutdown_status(self.equipment_id,card_id)
         self.running = False
 
 
