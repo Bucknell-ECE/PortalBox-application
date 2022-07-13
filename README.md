@@ -14,13 +14,15 @@ This project is licensed under the Apache 2.0 License - see the LICENSE file for
 ## Dependencies
 A MySQL or compatible (MariaDB) database loaded with the appropriate schema
 Systemd based Linux, tested with Raspbian Stretch and Buster
-Python 2.7+ 
+Python 3.7+ 
 Software Libraries
 - Available as python modules
 	- configparser (only required for python 2.7, python 3.x satisfies dependency internally)
 	- mysql-connector
 	- RPi.GPIO
 	- spi (we use a modified version as the version on PyPi does not support Python 3.x)
+	- spidev
+	- pyserial
 
 ## Configuration
 Configuration of Portal-Boxes occurs in two phases. First the Raspberry Pi at its heart must be put in a usable state. Then after the service is installed you can configure the service.
@@ -79,7 +81,7 @@ We use systemd to start and stop our service upon startup and before shutdown th
 
 ```
 cd ${PATH_TO_PROJECT}/portalbox
-sudo cp portal-box.service /etc/systemd/system/portalbox.service
+sudo cp portalbox.service /etc/systemd/system/portalbox.service
 sudo chmod 644 /etc/systemd/system/portalbox.service
 sudo systemctl daemon-reload
 sudo systemctl enable portalbox.service
