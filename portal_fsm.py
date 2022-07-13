@@ -415,7 +415,8 @@ class IdleAuthCard(State):
     def on_enter(self, input_data):
         self.service.box.set_equipment_power_on(False)
         self.service.db.log_access_completion(self.auth_user_id, self.service.equipment_id)
-        #If its a proxy 
+        
+        #If its a proxy card 
         if(self.proxy_id > 0):
             self.service.send_user_email_proxy(self.auth_user_id)
         else:
