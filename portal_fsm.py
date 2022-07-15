@@ -116,6 +116,11 @@ class Setup(State):
             except Exception as e:
                 raise e
 
+            try:
+                self.service.record_ip()
+            except Exception as e:
+                raise e
+
             self.service.box.set_display_color(self.service.settings["display"]["setup_color_role"])
 
             self.timeout_delta = timedelta(minutes = self.service.timeout_minutes)

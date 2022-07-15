@@ -741,3 +741,32 @@ class Database:
         else:
             response_details = response.json()[0]
             return response_details["name"]
+
+    def record_ip(self, equipment_id, ip):
+        '''
+        Gets the name of the equipment given the equipment id 
+
+        @return, a string of the name 
+        '''
+
+        logging.debug("Getting the equipment name")
+
+        params = {
+                "mode" : "record_ip",
+                "equipment_id" : equipment_id,
+                "ip_address" : ip
+                }
+
+
+        response = self.request_session.get(self.api_url, params = params)
+
+        logging.debug(f"Got response from server\nstatus: {response.status_code}\nbody: {response.text}")
+        
+        if(response.status_code != 200):
+            #If we don't get a succses status code, then return and unouthorized user 
+            logging.error(f"API error")
+            return "Unknown"
+        else:
+            response_details = response.json()[0]
+            return response_details["name"]
+
