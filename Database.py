@@ -758,7 +758,7 @@ class Database:
                 }
 
 
-        response = self.request_session.get(self.api_url, params = params)
+        response = self.request_session.post(self.api_url, params = params)
 
         logging.debug(f"Got response from server\nstatus: {response.status_code}\nbody: {response.text}")
         
@@ -766,7 +766,4 @@ class Database:
             #If we don't get a succses status code, then return and unouthorized user 
             logging.error(f"API error")
             return "Unknown"
-        else:
-            response_details = response.json()[0]
-            return response_details["name"]
 
