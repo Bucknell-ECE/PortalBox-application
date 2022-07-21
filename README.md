@@ -12,15 +12,15 @@ In some shell commands you may need to provide values left up to you. These valu
 This project is licensed under the Apache 2.0 License - see the LICENSE file for details
 
 ## Dependencies
-A MySQL or compatible (MariaDB) database loaded with the appropriate schema
+A MySQL or compatible (MariaDB) database loaded with the appropriate schema and website with appropiate API calls setup
 Systemd based Linux, tested with Raspbian Stretch and Buster
 Python 3.7+ 
 Software Libraries
 - Available as python modules
-	- configparser (only required for python 2.7, python 3.x satisfies dependency internally)
+	- configparser 
 	- mysql-connector
 	- RPi.GPIO
-	- spi (we use a modified version as the version on PyPi does not support Python 3.x)
+	- spi 
 	- spidev
 	- pyserial
 
@@ -29,30 +29,37 @@ Configuration of Portal-Boxes occurs in two phases. First the Raspberry Pi at it
 
 ### Configure Raspberry Pi
 - Configure networking for the Raspberry Pi. Networking is required in order to connect to and use the database. Depending on the exact Raspberry Pi model used and your network setup, the steps to do this will vary. If you are using a model with wired networking (more reliable but you have to run network cable) then configuration is typically automatic, just plug in the network cable. If you use WiFi with a preshared key (most common) to connect see: https://www.raspberrypi.org/documentation/configuration/wireless/wireless-cli.md and if you use WiFi with 802.11X authentication see: http://arduino.scholar.bucknell.edu/2019/04/05/customizing-raspbian-images/#setup_wireless_networking for some hints.
-- **Only For Pi0** Disable audio so audio chip can be used to control neopixels by: 
+- **Only For Pi0** 
+	- Disable audio so audio chip can be used to control neopixels by: 
 
-	```
-	sudo echo "blacklist snd_bcm2835" > /etc/modprobe.d/alsa-blacklist.conf
-	```
-- Enable i2c and spi interfaces by editing /boot/config.txt and changing:
+		```
+		sudo echo "blacklist snd_bcm2835" > /etc/modprobe.d/alsa-blacklist.conf
+		```
+	- In /boot/cmdline.txt
 
-	#dtparam=i2c_arm=on
+		Delete `console=serial0,115200`
 
-to:
+		And add `fsck.mode=force`
+	- Enable i2c and spi interfaces by editing /boot/config.txt and changing:
 
-	dtparam=i2c_arm=on
+		`#dtparam=i2c_arm=on`
 
-changing:
+		to:
 
-	#dtparam=spi=on
+		`dtparam=i2c_arm=on`
 
-to:
+		and changing:
 
-	dtparam=spi=on
+		`#dtparam=spi=on`
 
-and adding the line:
+		to:
 
-	dtoverlay=spi0-hw-cs
+		`dtparam=spi=on`
+
+		and adding the line:
+
+		`dtoverlay=spi0-hw-cs`
+		`enable_uart=1`
 
 ### Configure Service
 An example configuration file, `example-config.ini` has been provided in the repository. The simplest way to configure the service is to copy it to `config.ini` and edit the `config.ini` file, replacing the "YOUR_*" placeholders with the relevant values.
@@ -64,14 +71,14 @@ To install the service on a Portal Box:
 1) Clone this project to the Raspberry Pi. The typical location for such services is /opt though for development purposes you may want to choose something in your home directory
 
 ```
-cd ${PATH_TO_PROJECT}
-git clone git@github.com/Bucknell-ECE/PortalBox-application portalbox
+cd /opt
+sudo git clone https://github.com/Bucknell-ECE/PortalBox-application portalbox
 ```
 
 2) Install the dependencies
 	```sh
-	cd ${PATH_TO_PROJECT}/portalbox
-	pip install -r requirements.txt
+	cd /opt/portalbox
+	sudo pip3 install -r requirements.txt
 	```
 
 3) Configure the service (see Configuration)
@@ -80,7 +87,7 @@ git clone git@github.com/Bucknell-ECE/PortalBox-application portalbox
 We use systemd to start and stop our service upon startup and before shutdown therefore we need to register our service file with systemd. If you installed the software to the usual place: /opt/portalbox you can register the service by copying the provided service unit file to /etc/systemd/system.
 
 ```
-cd ${PATH_TO_PROJECT}/portalbox
+cd /opt/portalbox
 sudo cp portalbox.service /etc/systemd/system/portalbox.service
 sudo chmod 644 /etc/systemd/system/portalbox.service
 sudo systemctl daemon-reload
