@@ -181,7 +181,12 @@ class PortalBoxApplication():
         #If a card is present, and old_input_data showed either no card present, or a different card present
         if(card_id > 0 and card_id != old_input_data["card_id"]):
             logging.info("Card with ID: %d read, Getting info from DB", card_id)
-            details = self.db.get_card_details(card_id, self.equipment_type_id)
+            while True:
+                try:
+                    details = self.db.get_card_details(card_id, self.equipment_type_id)
+                    break
+                except Exception as e:
+                    logging.info(f"Exception: {e}\n trying again")
             new_input_data = {
                 "card_id": card_id,
                 "user_is_authorized": details["user_is_authorized"],              
