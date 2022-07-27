@@ -64,10 +64,10 @@ class State(object):
         @return a boolean which is True when the timeout period has expired
         """
         if(
-            self.service.timeout_minutes > 0 and # The timeout period isn't infinite
+            self.service.timeout_minutes > 0 and # The timeout period for the equipment type isn't infinite
             (datetime.now() - self.timeout_start) > self.timeout_delta # And that its actaully timed out
           ):
-            logging.debug("Grace period expired with time passed = {}".format((datetime.now() - self.grace_start)))
+            logging.debug("Timeout period expired with time passed = {}".format((datetime.now() - self.timeout_start)))
             return True
         else:
             return False
@@ -279,6 +279,8 @@ class RunningAuthUser(State):
         #If the card is new ie, not coming from a timeout then don't log this as a new session
         if self.auth_user_id != input_data["card_id"]:
             self.service.db.log_access_attempt(input_data["card_id"], self.service.equipment_id, True)
+
+        
         self.auth_user_id = input_data["card_id"]
         self.user_authority_level = input_data["user_authority_level"]
 
@@ -399,12 +401,12 @@ class RunningTimeout(State):
         self.grace_start = datetime.now()
         self.service.box.flash_display(
             self.service.settings["display"]["grace_timeout_color"],
-            self.timeout_delta.seconds * 1000,
+            self.grace_delta.seconds * 1000,
             int(self.grace_delta.seconds * self.flash_rate)
             )
         self.service.box.start_beeping(
             800,
-            self.timeout_delta.seconds * 1000,
+            self.grace_delta.seconds * 1000,
             int(self.grace_delta.seconds * self.flash_rate)
             )
 
