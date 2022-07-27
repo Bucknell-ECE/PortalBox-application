@@ -275,7 +275,7 @@ class PortalBoxApplication():
             logging.debug("Mailing user")
             self.emailer.send(recipients, "Training Card left in PortalBox", 
                 f"{trainee[0]}(trained by {trainer[0]}) it appears you left your card in a portal box for the {self.equipment_type} named {self.db.get_equipment_name(self.equipment_id)} in the {self.location}"
-                ))
+                )
         except Exception as e:
             logging.error("{}".format(e))
 

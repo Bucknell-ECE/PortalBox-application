@@ -426,6 +426,8 @@ class IdleAuthCard(State):
         #If its a proxy card 
         if(self.proxy_id > 0):
             self.service.send_user_email_proxy(self.auth_user_id)
+        if(self.training_id > 0):
+            self.service.send_user_email_training(self.auth_user_id, self.training_id)
         else:
             self.service.send_user_email(input_data["card_id"])
         self.service.box.set_display_color(self.service.settings["display"]["timeout_color"])
