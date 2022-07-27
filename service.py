@@ -262,6 +262,22 @@ class PortalBoxApplication():
         except Exception as e:
             logging.error("{}".format(e))
 
+    def send_user_email_training(self, trainer_id, trainee_id):
+        '''
+        Sends the user and the trainer an email when they have left a training card in the machine
+            past the timeout
+        '''
+        logging.debug("Getting user email ID from DB")
+        trainer = self.db.get_user(trainer_id)
+        trainee = self.db.get_user(trainee_id)
+        recipients = [trainer[1], trainee[1]]
+        try:
+            logging.debug("Mailing user")
+            self.emailer.send(recipients, "Training Card left in PortalBox", 
+                f"{trainee[0]}(trained by {trainer[0]}) it appears you left your card in a portal box for the {self.equipment_type} named {self.db.get_equipment_name(self.equipment_id)} in the {self.location}"
+                ))
+        except Exception as e:
+            logging.error("{}".format(e))
 
     def handle_interupt(self, signum, frame):
         '''

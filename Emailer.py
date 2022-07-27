@@ -21,12 +21,16 @@ class Emailer:
 
         params:
             to - The email address to which to send the email.
+                can be a string for 1 recipient or an array for multiple recipients 
             subject - The subject for the email
             body - The message body for the email
         """
         message = MIMEText(body)
         message['From'] = self.settings['from_address']
-        message['To'] = to
+        if(type(to) == str):
+            message['To'] = to
+        else:
+            message['To'] = ", ".join(to)
         if 'cc_address' in self.settings:
             message['Cc'] = self.settings['cc_address']
         if 'bcc_address' in self.settings:
