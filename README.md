@@ -29,12 +29,7 @@ Configuration of Portal-Boxes occurs in two phases. First the Raspberry Pi at it
 
 ### Configure Raspberry Pi
 - Configure networking for the Raspberry Pi. Networking is required in order to connect to and use the database. Depending on the exact Raspberry Pi model used and your network setup, the steps to do this will vary. If you are using a model with wired networking (more reliable but you have to run network cable) then configuration is typically automatic, just plug in the network cable. If you use WiFi with a preshared key (most common) to connect see: https://www.raspberrypi.org/documentation/configuration/wireless/wireless-cli.md and if you use WiFi with 802.11X authentication see: http://arduino.scholar.bucknell.edu/2019/04/05/customizing-raspbian-images/#setup_wireless_networking for some hints.
-- **Only For Pi0** 
-	- Disable audio so audio chip can be used to control neopixels by: 
-
-		```
-		sudo echo "blacklist snd_bcm2835" > /etc/modprobe.d/alsa-blacklist.conf
-		```
+- FOR PI0
 	- In /boot/cmdline.txt
 
 		Delete `console=serial0,115200`
@@ -56,10 +51,30 @@ Configuration of Portal-Boxes occurs in two phases. First the Raspberry Pi at it
 
 		`dtparam=spi=on`
 
-		and adding the line:
+		and adding the lines:
 
 		`dtoverlay=spi0-hw-cs`
+
 		`enable_uart=1`
+- FOR PI4
+	- In /boot/config.txt
+
+		Change 
+
+		`#dtparam=spi=on`
+
+		to:
+
+		`dtparam=spi=on`
+
+		and add the lines 
+
+		`enable_uart=1`
+
+		`dtoverlay=spi0-1cs`
+
+		`dtoverlay=spi1-1cs`
+
 
 ### Configure Service
 An example configuration file, `example-config.ini` has been provided in the repository. The simplest way to configure the service is to copy it to `config.ini` and edit the `config.ini` file, replacing the "YOUR_*" placeholders with the relevant values.
