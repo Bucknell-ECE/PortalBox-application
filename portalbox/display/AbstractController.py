@@ -1,4 +1,4 @@
-BLACK = b'\x00\x00\x00'
+BLACK = bytes.fromhex("00 00 00")
 
 _BAD_COLOR_VALUE_ERROR_MSG = ("Colors are expected to be a bytes object of "
                                 "length three (3) specifing the r,g and b "
@@ -47,7 +47,7 @@ class AbstractController:
         Set the entire strip to specified color.
         @param (unsigned integer) color - the color to set defaults to LED's off
         '''
-        if not color is bytes or 3 != len(color):
+        if type(color) is not bytes or 3 != len(color):
             raise ValueError(_BAD_COLOR_VALUE_ERROR_MSG)
 
 
@@ -57,23 +57,23 @@ class AbstractController:
         @param (unsigned integer) color - the color to set
         @param (int) duration - how long the effect is to take
         '''
-        if not color is bytes or 3 != len(color):
+        if type(color) is not bytes or 3 != len(color):
             raise ValueError(_BAD_COLOR_VALUE_ERROR_MSG)
 
-        if not duration is int or 0 > duration:
+        if type(duration) is not int or 0 > duration:
             raise ValueError(_BAD_DURATION_VALUE_ERROR_MSG)
 
 
     def flash_display(self, flash_color, duration, flashes=5, end_color = BLACK):
         """Flash color across all display pixels multiple times."""
-        if not flash_color is bytes or 3 != len(flash_color):
+        if type(flash_color) is not bytes or 3 != len(flash_color):
             raise ValueError(_BAD_COLOR_VALUE_ERROR_MSG)
 
-        if not duration is int or 0 > duration:
+        if type(duration) is not int or 0 > duration:
             raise ValueError(_BAD_DURATION_VALUE_ERROR_MSG)
 
-        if not flashes is int or 0 > flashes:
+        if type(flashes) is not int or 0 > flashes:
             raise ValueError(_BAD_FLASHES_VALUE_ERROR_MSG)
 
-        if not end_color is bytes or 3 != len(end_color):
+        if type(end_color) is not bytes or 3 != len(end_color):
             raise ValueError(_BAD_COLOR_VALUE_ERROR_MSG)

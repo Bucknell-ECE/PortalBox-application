@@ -1,54 +1,80 @@
+
 # Maker Portal Box Application
 
 ## About
-Portal Box is the access control system used in Makerspaces at Bucknell University. The current hardware consists of a Raspbery Pi 0 W connected to a custom PCB with a MiFare MFRC522 RFID reader, power interlock relays, a buzzer, and 15 Adafruit Neopixels. This project is the software which runs on the Portal Box hardware. It is designed to be run by `systemd` as a "service" though for testing it can be run manually though is requires elevated permissions due to the rpi_ws281x library used to controll the Neopixels requiring elevated permissions to interface with the I2C hardware.
+Portal Box is the access control system used in Makerspaces at Bucknell University. The current hardware consists of a Raspberry Pi 4 or Pi 0  connected to a custom PCB with a MiFare MFRC522 RFID reader, power interlock relays, a buzzer, and 15 DotStar(or Neopixel if using the Pi 0 setup) LEDS. This project is the software which runs on the Portal Box hardware. It is designed to be run by `systemd` as a "service" though for testing it can be run manually
 
 ### Note on Conventions
 In some shell commands you may need to provide values left up to you. These values are denoted using the semi-standard shell variable syntax e.g. ${NAME_OF_DATA} 
 
 ## License
+
 This project is licensed under the Apache 2.0 License - see the LICENSE file for details
 
-## Dependancies
-A MySQL or compatible (MariaDB) database loaded with the appropriate schema
+## Dependencies
+A MySQL or compatible (MariaDB) database loaded with the appropriate schema and website with appropiate API calls setup
 Systemd based Linux, tested with Raspbian Stretch and Buster
-Python 2.7+
+Python 3.7+ 
 Software Libraries
 - Available as python modules
-	- configparser (only required for python 2.7, python 3.x satisfies dependancy internally)
+	- configparser 
 	- mysql-connector
 	- RPi.GPIO
-	- spi (we use a modified version as the version on PyPi does not support Python 3.x)
+	- spi 
+	- spidev
+	- pyserial
 
 ## Configuration
-Configuration of Potal-Boxes occurs in two phases. First the Raspberry Pi at its heart must be put in a usable state. Then after the service is installed you can configure the service.
+Configuration of Portal-Boxes occurs in two phases. First the Raspberry Pi at its heart must be put in a usable state. Then after the service is installed you can configure the service.
 
 ### Configure Raspberry Pi
 - Configure networking for the Raspberry Pi. Networking is required in order to connect to and use the database. Depending on the exact Raspberry Pi model used and your network setup, the steps to do this will vary. If you are using a model with wired networking (more reliable but you have to run network cable) then configuration is typically automatic, just plug in the network cable. If you use WiFi with a preshared key (most common) to connect see: https://www.raspberrypi.org/documentation/configuration/wireless/wireless-cli.md and if you use WiFi with 802.11X authentication see: http://arduino.scholar.bucknell.edu/2019/04/05/customizing-raspbian-images/#setup_wireless_networking for some hints.
-- Disable audio so audio chip can be used to control neopixels by:
+- FOR PI0
+	- In /boot/cmdline.txt
 
-	```
-	sudo echo "blacklist snd_bcm2835" > /etc/modprobe.d/alsa-blacklist.conf
-	```
-- Enable i2c and spi interfaces by editing /boot/config.txt and changing:
+		Delete `console=serial0,115200`
 
-	#dtparam=i2c_arm=on
+		And add `fsck.mode=force`
+	- Enable i2c and spi interfaces by editing /boot/config.txt and changing:
 
-to:
+		`#dtparam=i2c_arm=on`
 
-	dtparam=i2c_arm=on
+		to:
 
-changing:
+		`dtparam=i2c_arm=on`
 
-	#dtparam=spi=on
+		and changing:
 
-to:
+		`#dtparam=spi=on`
 
-	dtparam=spi=on
+		to:
 
-and adding the line:
+		`dtparam=spi=on`
 
-	dtoverlay=spi0-hw-cs
+		and adding the lines:
+
+		`dtoverlay=spi0-hw-cs`
+
+		`enable_uart=1`
+- FOR PI4
+	- In /boot/config.txt
+
+		Change 
+
+		`#dtparam=spi=on`
+
+		to:
+
+		`dtparam=spi=on`
+
+		and add the lines 
+
+		`enable_uart=1`
+
+		`dtoverlay=spi0-1cs`
+
+		`dtoverlay=spi1-1cs`
+
 
 ### Configure Service
 An example configuration file, `example-config.ini` has been provided in the repository. The simplest way to configure the service is to copy it to `config.ini` and edit the `config.ini` file, replacing the "YOUR_*" placeholders with the relevant values.
@@ -60,14 +86,14 @@ To install the service on a Portal Box:
 1) Clone this project to the Raspberry Pi. The typical location for such services is /opt though for development purposes you may want to choose something in your home directory
 
 ```
-cd ${PATH_TO_PROJECT}
-git clone git@github.com/Bucknell-ECE/Badging-Box.git portalbox
+cd /opt
+sudo git clone https://github.com/Bucknell-ECE/PortalBox-application portalbox
 ```
 
-2) Install the dependancies
+2) Install the dependencies
 	```sh
-	cd ${PATH_TO_PROJECT}/portalbox
-	pip install -r requirements.txt
+	cd /opt/portalbox
+	sudo pip3 install -r requirements.txt
 	```
 
 3) Configure the service (see Configuration)
@@ -76,8 +102,8 @@ git clone git@github.com/Bucknell-ECE/Badging-Box.git portalbox
 We use systemd to start and stop our service upon startup and before shutdown therefore we need to register our service file with systemd. If you installed the software to the usual place: /opt/portalbox you can register the service by copying the provided service unit file to /etc/systemd/system.
 
 ```
-cd ${PATH_TO_PROJECT}/portalbox
-sudo cp portal-box.service /etc/systemd/system/portalbox.service
+cd /opt/portalbox
+sudo cp portalbox.service /etc/systemd/system/portalbox.service
 sudo chmod 644 /etc/systemd/system/portalbox.service
 sudo systemctl daemon-reload
 sudo systemctl enable portalbox.service
@@ -88,4 +114,6 @@ sudo systemctl enable portalbox.service
 - Email messages are hard coded in well code, templates should be used
 	- should be able to configure the location of email template files
 - GMail uses weak certificates which recent raspbian releases reject as invalid. We need to configure smtplib to ignore the weak certificates and use only the certificates raspbian find trustworthy (requires Python 3.x).
-- We use a custom spi, we should consider moving to spidev or releasing our verion of spi on PyPi.
+- We use a custom spi, we should consider moving to spidev or releasing our versionverion of spi on PyPi.
+
+

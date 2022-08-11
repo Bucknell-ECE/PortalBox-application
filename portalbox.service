@@ -4,6 +4,7 @@ After=network.target
 
 [Service]
 ExecStart=/usr/bin/python3 /opt/portalbox/service.py /opt/portalbox/config.ini
+Environment=PYTHONPATH=$PYTHONPATH:/home/pi/.local/lib/python3.7/site-packages
 
 [Install]
 WantedBy=multi-user.target

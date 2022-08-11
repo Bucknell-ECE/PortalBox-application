@@ -1,21 +1,28 @@
 #!python3
 
+"""
+  2021-04-04 Version   KJHass
+    - Get "requires_training" and "requires_payment" just once rather than
+      every time a card is checked
+
+"""
+
 # from standard library
 import logging
+import requests
+
+import time
 
 # third party libraries
 import mysql.connector
+
+# our code
+from CardType import CardType
 
 class Database:
     '''
     A high level interface to the backend database
     '''
-    # Access card types
-    INVALID_CARD = -1
-    SHUTDOWN_CARD = 1
-    PROXY_CARD = 2
-    TRAINING_CARD = 3
-    USER_CARD = 4
 
     def __init__(self, settings):
         '''
@@ -39,6 +46,12 @@ class Database:
             'database': settings['database'],
         }
 
+        self.api_url= f"{settings['website']}/api/{settings['api']}"
+        self.api_header = {"Authorization" : f"Bearer {settings['bearer_token']}"}
+
+        self.request_session = requests.Session()
+        self.request_session.headers.update(self.api_header)        
+
         # Add in the optional keys
         if 'port' in settings:
             self.connection_settings['port'] = settings['port']
@@ -48,14 +61,14 @@ class Database:
                 self.use_persistent_connection = False
 
         logging.debug("DB Connection Settings: %s", self.connection_settings)
-
+        '''
         if self.use_persistent_connection:
             self._connection = mysql.connector.connect(**self.connection_settings)
             if self._connection:
                 logging.debug("Initialized persistent DB connection")
             else:
                 logging.error("Failed to initialize persistent connection")
-
+        ''' 
 
     def __del__(self):
         '''
@@ -74,6 +87,8 @@ class Database:
 
         self._connection = self._connect()
 
+        logging.debug("Reconnected to database")
+
         return self._connection
 
 
@@ -83,7 +98,12 @@ class Database:
         '''
         logging.debug("Attempting to connect to database")
 
-        return mysql.connector.connect(**self.connection_settings)
+        logging.debug("Connection Settings: {}".format(str(self.connection_settings)))
+        connection = mysql.connector.connect(**self.connection_settings)
+
+        logging.debug("Connected to database")
+
+        return connection
 
 
     def is_registered(self, mac_address):
@@ -94,9 +114,28 @@ class Database:
         @param (string)mac_address - the mac_address of the portal box to
              check registration status of
         '''
-        registered = False
-        connection = self._connection
+        logging.debug(f"Checking if portal box with Mac Address {mac_address} is registered")
 
+        params = {
+                "mode" : "check_reg",
+                "mac_adr" : mac_address
+                }
+
+        response = self.request_session.get(self.api_url, params = params)
+
+        logging.debug(f"Got response from server\nstatus: {response.status_code}\nbody: {response.text}")
+        
+        if(response.status_code != 200):
+            #If we don't get a succes status code, then return -1
+            logging.error(f"API error")
+            return -1
+
+        else:
+            response_details = response.json()
+            return int(response_details)
+
+
+        '''
         try:
             if self.use_persistent_connection:
                 if not connection.is_connected():
@@ -116,8 +155,7 @@ class Database:
                 connection.close()
         except mysql.connector.Error as err:
             logging.error("{}".format(err))
-
-        return registered
+        '''
 
 
     def register(self, mac_address):
@@ -125,9 +163,25 @@ class Database:
         Register the portal box identified by the MAC address with the database
         as an out of service device
         '''
-        success = False
-        connection = self._connection
 
+        params = {
+                "mode" : "register",
+                "mac_adr" : mac_address
+                }
+
+        response = self.request_session.put(self.api_url, params = params)
+
+        logging.debug(f"Got response from server\nstatus: {response.status_code}\nbody: {response.text}")
+        
+        if(response.status_code != 200):
+            #If we don't get a succes status code, then return -1
+            logging.error(f"API error")
+            return False
+
+        else:
+            return True 
+
+        '''
         try:
             if self.use_persistent_connection:
                 if not connection.is_connected():
@@ -151,6 +205,7 @@ class Database:
             logging.error("{}".format(err))
 
         return success
+        '''
 
 
     def get_equipment_profile(self, mac_address):
@@ -159,13 +214,42 @@ class Database:
 
         @return a tuple consisting of: (int)equipment id,
         (int)equipment type id, (str)equipment type, (int)location id,
-        (str)location, (int)time limit in minutes
+        (str)location, (int)time limit in minutes, (int) allow proxy
         '''
         logging.debug("Querying database for equipment profile")
 
-        profile = (-1, -1, None, -1, None, -1)
-        connection = self._connection
+        profile = (-1, -1, None, -1, None, -1, -1)
 
+        params = {
+                "mode" : "get_profile",
+                "mac_adr" : mac_address
+                }
+
+
+        response = self.request_session.get(self.api_url, params = params)
+
+        logging.debug(f"Got response from server\nstatus: {response.status_code}\nbody: {response.text}")
+        
+        if(response.status_code != 200):
+            #If we don't get a succses status code, then return and unouthorized user 
+            logging.error(f"API error")
+            self.requires_training = True
+            self.requires_payment = False
+        else:
+            response_details = response.json()[0]
+            profile = (
+                    int(response_details["id"]),
+                    int(response_details["type_id"]),
+                    response_details["name"][0],
+                    int(response_details["location_id"]),
+                    response_details["name"][1],
+                    int(response_details["timeout"]),
+                    int(response_details["allow_proxy"])
+                    )
+            self.requires_training = int(response_details["requires_training"])
+            self.requires_payment  = int(response_details["charge_policy"])
+            
+        '''
         try:
             if self.use_persistent_connection:
                 if not connection.is_connected():
@@ -174,25 +258,34 @@ class Database:
                 connection = self._connect()
 
             # Query MySQL for RID by sending MAC Address
-            query = ("SELECT e.id, e.type_id, t.name, e.location_id, l.name, e.timeout "
+            query = ("SELECT e.id, e.type_id, t.name, e.location_id, l.name, e.timeout, t.allow_proxy "
                 "FROM equipment AS e "
                 "INNER JOIN equipment_types AS t ON e.type_id = t.id "
                 "INNER JOIN locations AS l ON e.location_id =  l.id "
                 "WHERE e.mac_address = %s")
+            logging.debug("Sending this \/ query to the database \n {}".format(query))
             cursor = connection.cursor(buffered = True) # we want rowcount to be available
             cursor.execute(query, (mac_address,))
 
             if 0 < cursor.rowcount:
                 # Interpret result
                 profile = cursor.fetchone()
-                logging.debug("Fetched equipment profile")
+                logging.debug("Fetched equipment profile : {}".format(profile))
             else:
+                return profile
                 logging.debug("Failed to fetch equipment profile")
+                
+            query = ("SELECT requires_training, charge_policy_id > 2 FROM equipment_types WHERE id = %s")
+            cursor = connection.cursor()
+            cursor.execute(query, (profile[1],))
+            (self.requires_training,self.requires_payment) = cursor.fetchone()
+
             cursor.close()
             if not self.use_persistent_connection:
                 connection.close()
         except mysql.connector.Error as err:
             logging.error("{}".format(err))
+        '''
 
         return profile
 
@@ -203,8 +296,23 @@ class Database:
 
         @param equipment_id: The ID assigned to the portal box
         '''
-        connection = self._connection
+        logging.debug("Logging with the database that this portalbox has started up")
 
+
+        params = {
+                "mode" : "log_started_status",
+                "equipment_id" :equipment_id
+                }
+
+
+        response = self.request_session.post(self.api_url, params = params)
+
+        logging.debug(f"Got response from server\nstatus: {response.status_code}\nbody: {response.text}")
+        
+        if(response.status_code != 200):
+            #If we don't get a succses status code, then return and unouthorized user 
+            logging.error(f"API error")
+        '''
         try:
             if self.use_persistent_connection:
                 if not connection.is_connected():
@@ -225,7 +333,7 @@ class Database:
                 connection.close()
         except mysql.connector.Error as err:
             logging.error("{}".format(err))
-
+        '''
 
     def log_shutdown_status(self, equipment_id, card_id):
         '''
@@ -235,8 +343,24 @@ class Database:
         @param card_id: The ID read from the card presented by the user use
             or a falsy value if shutdown is not related to a card
         '''
-        connection = self._connection
+        logging.debug("Logging with the database that this box has shutdown")
 
+        params = {
+                "mode" : "log_shutdown_status",
+                "equipment_id" : equipment_id,
+                "card_id" : card_id
+                }
+
+
+        response = self.request_session.post(self.api_url, params = params)
+
+        logging.debug(f"Got response from server\nstatus: {response.status_code}\nbody: {response.text}")
+        
+        if(response.status_code != 200):
+            #If we don't get a succses status code, then return and unouthorized user 
+            logging.error(f"API error")
+
+        '''
         try:
             if self.use_persistent_connection:
                 if not connection.is_connected():
@@ -264,18 +388,36 @@ class Database:
                 connection.close()
         except mysql.connector.Error as err:
             logging.error("{}".format(err))
-
+        '''
 
     def log_access_attempt(self, card_id, equipment_id, successful):
         '''
         Logs start time for user using a resource.
-        
+
         @param card_id: The ID read from the card presented by the user
         @param equipment_id: The ID assigned to the portal box
         @param successful: If login was successful (user is authorized)
         '''
-        connection = self._connection
+        
+        logging.debug("Logging with database an access attempt")
 
+        params = {
+                "mode" : "log_access_attempt",
+                "equipment_id" : equipment_id,
+                "card_id" : card_id,
+                "successful" : int(successful)
+                }
+
+
+        response = self.request_session.post(self.api_url, params = params)
+
+        logging.debug(f"Got response from server\nstatus: {response.status_code}\nbody: {response.text}")
+        logging.debug(f"Took {response.elapsed.total_seconds()}")        
+        if(response.status_code != 200):
+            #If we don't get a succses status code, then return and unouthorized user 
+            logging.error(f"API error")
+        
+        '''
         try:
             if self.use_persistent_connection:
                 if not connection.is_connected():
@@ -294,18 +436,34 @@ class Database:
                 connection.close()
         except mysql.connector.Error as err:
             logging.error("{}".format(err))
-
+        '''
 
     def log_access_completion(self, card_id, equipment_id):
         '''
         Logs end time for user using a resource.
-        
+
         @param card_id: The ID read from the card presented by the user
         @param equipment_id: The ID assigned to the portal box
-        @param successful: If login was successful (user is authorized)
         '''
-        connection = self._connection
+        
+        logging.debug("Logging with database an access completion")
 
+        params = {
+                "mode" : "log_access_completion",
+                "equipment_id" : equipment_id,
+                "card_id" : card_id
+                }
+
+
+        response = self.request_session.post(self.api_url, params = params)
+
+        logging.debug(f"Got response from server\nstatus: {response.status_code}\nbody: {response.text}")
+        logging.debug(f"Took {response.elapsed.total_seconds()}")        
+        if(response.status_code != 200):
+            #If we don't get a succses status code, then return and unouthorized user 
+            logging.error(f"API error")
+
+        '''
         try:
             if self.use_persistent_connection:
                 if not connection.is_connected():
@@ -314,38 +472,117 @@ class Database:
                 connection = self._connect()
 
             query = ("CALL log_access_completion(%s, %s)")
+
+
             cursor = connection.cursor()
 
+
             cursor.execute(query, (card_id, equipment_id))
+
             connection.commit()
             cursor.close()
             if not self.use_persistent_connection:
                 connection.close()
         except mysql.connector.Error as err:
             logging.error("{}".format(err))
+        '''
+
+    def get_card_details(self, card_id, equipment_type_id):
+        '''
+        This function gets the pertinant details about a card from the database, only connecting to it once
+        These are returned in a dictionary 
+        Returns: {
+            "user_is_authorized": true/false //Whether or not the user is authorized for this equipment
+            "card_type": CardType //The type of card
+            "user_authority_level": int //Returns if the user is a normal user, trainer, or admin
+            }
+        '''
+        logging.debug("Starting to get user details for card with ID %d", card_id)
+        params = {
+                "mode" : "get_card_details",
+                "card_id" : card_id,
+                "equipment_id" : equipment_type_id
+                }
 
 
-    def is_user_authorized_for_equipment_type(self, card_id, equipment_type_id):
+        response = self.request_session.get(self.api_url, params = params)
+
+        logging.debug(f"Got response from server\nstatus: {response.status_code}\nbody: {response.text}")
+        logging.debug(f"Took {response.elapsed.total_seconds()}")        
+
+        if(response.status_code != 200):
+            #If we don't get a succses status code, then return and unouthorized user 
+            logging.error(f"API error")
+            details = {
+                    "user_is_authorized": False,
+                    "card_type" : CardType(0),
+                    "user_authority_level": 0
+                    }
+        else:
+            response_details = response.json()[0]
+
+            if response_details["user_role"] == None:
+                response_details["user_role"] = 0
+
+            if response_details["card_type"] == None:
+                response_details["card_type"] = -1
+            details = {
+                    "user_is_authorized": self.is_user_authorized_for_equipment_type(response_details),
+                    "card_type" : CardType(int(response_details["card_type"])),
+                    "user_authority_level": int(response_details["user_role"])
+                    }
+        return details
+
+    def is_user_authorized_for_equipment_type(self, card_details):
         '''
         Check if card holder identified by card_id is authorized for the
         equipment type identified by equipment_type_id
         '''
         is_authorized = False
-        connection = self._connection
 
+        balance = float(card_details["user_balance"])
+        user_auth = int(card_details["user_auth"])
+        if card_details["user_active"] == None:
+            return False
+        if int(card_details["user_active"]) != 1:
+            return False
+            
+
+        if self.requires_training and self.requires_payment:
+            if balance > 0.0 and user_auth:
+                is_authorized = True
+            else:
+                is_authorized = False
+        elif self.requires_training and not self.requires_payment:
+            if user_auth:
+                is_authorized = True
+            else:
+                is_authorized = False
+        elif not self.requires_training and self.requires_payment:
+            if balance > 0.0:
+                is_authorized = True
+            else: 
+                is_authorized = False
+        else:
+            is_authorized = True
+
+    
+
+
+        '''
+        logging.debug("Starting to get DB info for card with ID:%d", card_id)
         try:
             if self.use_persistent_connection:
                 if not connection.is_connected():
                     connection = self._reconnect()
             else:
                 connection = self._connect()
-
-            query = ("SELECT requires_training, charge_policy_id > 2 FROM equipment_types WHERE id = %s")
-            cursor = connection.cursor()
-            cursor.execute(query, (equipment_type_id,))
+                
+            if self.is_user_active(card_id) == False:
+                return False
             
-            (requires_training,requires_payment) = cursor.fetchone()
-            if requires_training and requires_payment:
+            cursor = connection.cursor()
+            if self.requires_training and self.requires_payment:
                 # check balance
                 query = ("SELECT get_user_balance_for_card(%s)")
                 cursor.execute(query, (card_id,))
@@ -359,7 +596,9 @@ class Database:
                     (count,) = cursor.fetchone()
                     if 0 < count:
                         is_authorized = True
-            elif requires_training and not requires_payment:
+                else:
+                    is_authorized = False
+            elif self.requires_training and not self.requires_payment:
                 query = ("SELECT count(u.id) FROM users_x_cards AS u "
                 "INNER JOIN authorizations AS a ON a.user_id= u.user_id "
                 "WHERE u.card_id = %s AND a.equipment_type_id = %s")
@@ -367,57 +606,27 @@ class Database:
                 (count,) = cursor.fetchone()
                 if 0 < count:
                     is_authorized = True
-            elif not requires_training and requires_payment:
+            elif not self.requires_training and self.requires_payment:
                 # check balance
                 query = ("SELECT get_user_balance_for_card(%s)")
                 cursor.execute(query, (card_id,))
                 (balance,) = cursor.fetchone()
                 if 0.0 < balance:
                     is_authorized = True
+                else:
+                    is_authorized = False
             else:
                 # we don't require payment or training, user is implicitly authorized
-                is_authorized = True           
+                is_authorized = True
 
             cursor.close()
             if not self.use_persistent_connection:
                 connection.close()
         except mysql.connector.Error as err:
             logging.error("{}".format(err))
-
+        logging.info("Found card with ID: %d has is_authorized = %r",card_id,is_authorized)
+        '''
         return is_authorized
-
-
-    def get_card_type(self, id):
-        '''
-        Get the type of the card identified by id
-
-        @return an integer: -1 for card not found, 1 for shutdown card, 2 for
-            proxy card, 3 for training card, and 4 for user card 
-        '''
-        type_id = -1
-        connection = self._connection
-
-        try:
-            if self.use_persistent_connection:
-                if not connection.is_connected():
-                    connection = self._reconnect()
-            else:
-                connection = self._connect()
-
-            query = ("SELECT type_id FROM cards WHERE id = %s")
-
-            cursor = connection.cursor(buffered = True) # we want rowcount to be available
-            cursor.execute(query, (id,))
-
-            if 0 < cursor.rowcount:
-                (type_id,) = cursor.fetchone()
-            cursor.close()
-            if not self.use_persistent_connection:
-                connection.close()
-        except mysql.connector.Error as err:
-            logging.error("{}".format(err))
-
-        return type_id
 
 
     def is_training_card_for_equipment_type(self, id, type_id):
@@ -427,6 +636,8 @@ class Database:
         '''
         valid = False
         connection = self._connection
+
+        logging.debug("Checking Training card as valid")
 
         try:
             if self.use_persistent_connection:
@@ -451,16 +662,37 @@ class Database:
 
         return valid
 
- 
-    def get_user(self, id):
+
+    def get_user(self, card_id):
         '''
         Get details for the user identified by (card) id
 
         @return, a tuple of name and email
         '''
         user = (None, None)
-        connection = self._connection
+        
+        logging.debug(f"Getting user information from card ID: {id}")
 
+        params = {
+                "mode" : "get_user",
+                "card_id" : card_id
+                }
+
+
+        response = self.request_session.get(self.api_url, params = params)
+
+        logging.debug(f"Got response from server\nstatus: {response.status_code}\nbody: {response.text}")
+        
+        if(response.status_code != 200):
+            #If we don't get a succses status code, then return and unouthorized user 
+            logging.error(f"API error")
+        else:
+            response_details = response.json()[0]
+            user = (
+                    response_details["name"],
+                    response_details["email"]
+                    )
+        '''V
         try:
             if self.use_persistent_connection:
                 if not connection.is_connected():
@@ -480,5 +712,58 @@ class Database:
                 connection.close()
         except mysql.connector.Error as err:
             logging.error("{}".format(err))
-
+        '''
         return user
+
+    def get_equipment_name(self, equipment_id):
+        '''
+        Gets the name of the equipment given the equipment id 
+
+        @return, a string of the name 
+        '''
+
+        logging.debug("Getting the equipment name")
+
+        params = {
+                "mode" : "get_equipment_name",
+                "equipment_id" : equipment_id
+                }
+
+
+        response = self.request_session.get(self.api_url, params = params)
+
+        logging.debug(f"Got response from server\nstatus: {response.status_code}\nbody: {response.text}")
+        
+        if(response.status_code != 200):
+            #If we don't get a succses status code, then return and unouthorized user 
+            logging.error(f"API error")
+            return "Unknown"
+        else:
+            response_details = response.json()[0]
+            return response_details["name"]
+
+    def record_ip(self, equipment_id, ip):
+        '''
+        Gets the name of the equipment given the equipment id 
+
+        @return, a string of the name 
+        '''
+
+        logging.debug("Getting the equipment name")
+
+        params = {
+                "mode" : "record_ip",
+                "equipment_id" : equipment_id,
+                "ip_address" : ip
+                }
+
+
+        response = self.request_session.post(self.api_url, params = params)
+
+        logging.debug(f"Got response from server\nstatus: {response.status_code}\nbody: {response.text}")
+        
+        if(response.status_code != 200):
+            #If we don't get a succses status code, then return and unouthorized user 
+            logging.error(f"API error")
+            return "Unknown"
+
