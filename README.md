@@ -74,6 +74,10 @@ Configuration of Portal-Boxes occurs in two phases. First the Raspberry Pi at it
 		`dtoverlay=spi0-1cs`
 
 		`dtoverlay=spi1-1cs`
+		
+		`dtoverlay=gpio-shutdown`
+		
+		`dtoverlay=gpio-fan,gpio-pin=12,temp=55000`
 
 
 ### Configure Service
