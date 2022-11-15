@@ -4,6 +4,8 @@
 ## About
 Portal Box is the access control system used in Makerspaces at Bucknell University. The current hardware consists of a Raspberry Pi 4 or Pi 0  connected to a custom PCB with a MiFare MFRC522 RFID reader, power interlock relays, a buzzer, and 15 DotStar(or Neopixel if using the Pi 0 setup) LEDS. This project is the software which runs on the Portal Box hardware. It is designed to be run by `systemd` as a "service" though for testing it can be run manually
 
+This branch uses the LEDs for enhanced visual effects that convey information about the current state of the application.
+
 ### Note on Conventions
 In some shell commands you may need to provide values left up to you. These values are denoted using the semi-standard shell variable syntax e.g. ${NAME_OF_DATA} 
 
