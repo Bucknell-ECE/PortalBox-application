@@ -1,6 +1,8 @@
 """
 The finite state machine for the portal box service.
 
+2022-11-15 KJHass
+    -Added enhanced LED effects
 2021-05-07 KJHass
     -Created skeleton code for the class
 2021-06-26 James Howe
@@ -93,23 +95,30 @@ class Setup(State):
         pass
 
     def on_enter(self, input_data):
-        #Do everything related to setup, if anything fails and returns an exception, then go to Shutdown
+        #Do everything related to setup, if anything fails and returns an
+        #exception, then go to Shutdown
         logging.info("Starting setup")
-        self.service.box.set_display_color(self.service.settings["display"]["setup_color"])
         try:
+            # Bounce a pixel while connecting to database
+            self.service.box.set_display_color(self.service.settings["display"]["setup_color"])
+            self.service.box.bounce_display(self.service.settings["display"]["setup_color_db"], 20)
             try:
                 self.service.connect_to_database()
             except Exception as e:
                 raise e
 
-            self.service.box.set_display_color(self.service.settings["display"]["setup_color_db"])
+            # Bounce a pixel while connecting to email
+            self.service.box.set_display_color(self.service.settings["display"]["setup_color"])
+            self.service.box.bounce_display(self.service.settings["display"]["setup_color_email"], 20)
 
             try:
                 self.service.connect_to_email()
             except Exception as e:
                 raise e
 
-            self.service.box.set_display_color(self.service.settings["display"]["setup_color_email"])
+            # Bounce a pixel while getting role
+            self.service.box.set_display_color(self.service.settings["display"]["setup_color"])
+            self.service.box.bounce_display(self.service.settings["display"]["access_db_color"], 20)
 
             try:
                 self.service.get_equipment_role()
@@ -121,7 +130,7 @@ class Setup(State):
             except Exception as e:
                 raise e
 
-            self.service.box.set_display_color(self.service.settings["display"]["setup_color_role"])
+            self.service.box.set_display_color(self.service.settings["display"]["setup_color"])
 
             self.timeout_delta = timedelta(minutes = self.service.timeout_minutes)
             self.grace_delta = timedelta(seconds = self.service.settings.getint("user_exp","grace_period"))
@@ -143,8 +152,13 @@ class Shutdown(State):
     Shuts down the box
     """
     def __call__(self, input_data):
+        self.service.box.set_display_color(self.service.settings["display"]["shutdown_color"])
+        self.service.box.bounce_display(self.service.settings["display"]["access_db_color"], 20)
+
         self.service.box.set_equipment_power_on(False)
         self.service.shutdown(input_data["card_id"]) #logging the shutdown is done in this method
+
+        self.service.box.set_display_color(self.service.settings["display"]["shutdown_color"])
 
 
 
@@ -157,7 +171,6 @@ class IdleNoCard(State):
             self.next_state(IdleUnknownCard, input_data)
 
     def on_enter(self, input_data):
-        #self.service.box.set_display_color(self.service.settings["display"]["sleep_color"])
         self.service.box.sleep_display()
 
 class AccessComplete(State):
@@ -172,6 +185,11 @@ class AccessComplete(State):
         logging.info("Usage complete, logging usage and turning off machine")
         self.service.db.log_access_completion(self.auth_user_id, self.service.equipment_id)
         self.service.box.set_equipment_power_on(False)
+
+        self.service.box.set_display_color(self.service.settings["display"]["sleep_color"])
+        self.service.box.bounce_display(self.service.settings["display"]["access_db_color"], 20)
+        self.service.db.log_access_completion(self.auth_user_id, self.service.equipment_id)
+
         self.proxy_id = 0
         self.training_id = 0
         self.auth_user_id = 0
@@ -232,7 +250,7 @@ class RunningUnknownCard(State):
         #The box was intially authorized by a trainer or admin AND
         #Not coming from proxy mode AND
         #Not coming from training mode, OR the card is the same one that was being trained AND
-        #An unathorized user
+        #An unauthorized user
 
         elif(
             input_data["card_type"] == CardType.USER_CARD and
@@ -256,6 +274,13 @@ class RunningUnknownCard(State):
 #        else:
 #            self.next_state(AccessComplete, input_data)
 
+    def on_enter(self, input_data):
+        # in grace period
+        self.service.box.set_display_color(self.service.settings["display"]["no_card_grace_color"])
+        # remove unauth card
+        self.service.box.scroll_display(self.service.settings["display"]["unauth_color"], 200,
+                                        dir_down = 1, back_pixels = 3, center = 5)
+
 class RunningAuthUser(State):
     """
     An authorized user has put their card in, the machine will function
@@ -273,14 +298,15 @@ class RunningAuthUser(State):
         self.proxy_id = 0
         self.training_id = 0
         self.service.box.set_equipment_power_on(True)
-        self.service.box.set_display_color(self.service.settings["display"]["auth_color"])
+        self.service.box.set_display_color_wipe(self.service.settings["display"]["auth_color"])
         self.service.box.beep_once()
 
         #If the card is new ie, not coming from a timeout then don't log this as a new session
         if self.auth_user_id != input_data["card_id"]:
+            self.service.box.bounce_display(self.service.settings["display"]["access_db_color"], 20)
             self.service.db.log_access_attempt(input_data["card_id"], self.service.equipment_id, True)
+            self.service.box.set_display_color(self.service.settings["display"]["auth_color"])
 
-        
         self.auth_user_id = input_data["card_id"]
         self.user_authority_level = input_data["user_authority_level"]
 
@@ -299,7 +325,12 @@ class IdleUnauthCard(State):
         self.service.box.beep_once()
         self.service.box.set_equipment_power_on(False)
         self.service.box.set_display_color(self.service.settings["display"]["unauth_color"])
+        self.service.box.bounce_display(self.service.settings["display"]["access_db_color"], 20)
         self.service.db.log_access_attempt(input_data["card_id"], self.service.equipment_id, False)
+
+        self.service.box.set_display_color(self.service.settings["display"]["sleep_color"])
+        self.service.box.scroll_display(self.service.settings["display"]["unauth_color"], 200,
+                                        dir_down=1, back_pixels=3, center=5)
 
 class RunningNoCard(State):
     """
@@ -325,11 +356,9 @@ class RunningNoCard(State):
     def on_enter(self, input_data):
         logging.info("Grace period started")
         self.grace_start = datetime.now()
-        self.service.box.flash_display(
-            self.service.settings["display"]["no_card_grace_color"],
-            self.grace_delta.seconds * 1000,
-            int(self.grace_delta.seconds * self.flash_rate)
-            )
+        self.service.box.set_display_color(self.service.settings["display"]["no_card_grace_color"])
+        self.service.box.scroll_display(self.service.settings["display"]["unauth_color"], 200,
+                                        dir_down=0, back_pixels=3, center=5)
         
         self.service.box.start_beeping(
             800,
@@ -339,10 +368,12 @@ class RunningNoCard(State):
 
 class RunningUnauthCard(State):
     """
-    A card type which isn't allowed on this machine has been read while the machine is running, gives the user time to put back their authorized card
+    A card type which isn't allowed on this machine has been read while the
+    machine is running, gives the user time to put back their authorized card
     """
     def __call__(self, input_data):
-        #Card detected and its the same card that was using the machine before the unauth card was inserted 
+        # Card detected and its the same card that was using the machine
+        # before the unauth card was inserted 
         if(
             input_data["card_id"] > 0 and
             input_data["card_id"] == self.auth_user_id
@@ -364,13 +395,10 @@ class RunningUnauthCard(State):
         logging.info("Unauthorized Card grace period started")
         logging.info("Card type was {}".format(input_data["card_type"]))
         self.grace_start = datetime.now()
-        self.service.box.set_display_color(self.service.settings["display"]["unauth_card_grace_color"])
-        self.service.box.flash_display(
-            self.service.settings["display"]["unauth_card_grace_color"],
-            self.grace_delta.seconds * 1000,
-            int(self.grace_delta.seconds * self.flash_rate)
-            )
-        
+        self.service.box.set_display_color(self.service.settings["display"]["no_card_grace_color"])
+        self.service.box.scroll_display(self.service.settings["display"]["proxy_color"], 200,
+                                        dir_down=1, back_pixels=3, center=5)
+
         self.service.box.start_beeping(
             800,
             self.grace_delta.seconds * 1000,
@@ -399,11 +427,10 @@ class RunningTimeout(State):
     def on_enter(self, input_data):
         logging.info("Machine timout, grace period started")
         self.grace_start = datetime.now()
-        self.service.box.flash_display(
-            self.service.settings["display"]["grace_timeout_color"],
-            self.grace_delta.seconds * 1000,
-            int(self.grace_delta.seconds * self.flash_rate)
-            )
+        self.service.box.set_display_color(self.service.settings["display"]["timeout_color"])
+        # Remove your card and press the button!
+        self.service.box.scroll_display(self.service.settings["display"]["grace_timeout_color"], 200,
+                                        dir_down=0, back_pixels=5, center=7)
         self.service.box.start_beeping(
             800,
             self.grace_delta.seconds * 1000,
@@ -412,7 +439,7 @@ class RunningTimeout(State):
 
 class IdleAuthCard(State):
     """
-    The timout grace period is expired and the user is sent and email that
+    The timeout grace period is expired and the user is sent an email that
         their card is still in the machine, waits until the card is removed
     """
     def __call__(self, input_data):
@@ -423,6 +450,8 @@ class IdleAuthCard(State):
         self.service.box.set_equipment_power_on(False)
         self.service.db.log_access_completion(self.auth_user_id, self.service.equipment_id)
         
+        self.service.box.set_display_color(self.service.settings["display"]["timeout_color"])
+        self.service.box.bounce_display(self.service.settings["display"]["email_connect_color"], 20)
         #If its a proxy card 
         if(self.proxy_id > 0):
             self.service.send_user_email_proxy(self.auth_user_id)
@@ -430,7 +459,7 @@ class IdleAuthCard(State):
             self.service.send_user_email_training(self.auth_user_id, self.training_id)
         else:
             self.service.send_user_email(input_data["card_id"])
-        self.service.box.set_display_color(self.service.settings["display"]["timeout_color"])
+
         self.proxy_id = 0
         self.training_id = 0
         self.auth_user_id = 0
@@ -455,7 +484,7 @@ class RunningProxyCard(State):
             self.service.db.log_access_attempt(input_data["card_id"], self.service.equipment_id, True)
         self.proxy_id = input_data["card_id"]
         self.service.box.set_equipment_power_on(True)
-        self.service.box.set_display_color(self.service.settings["display"]["proxy_color"])
+        self.service.box.set_display_color_wipe(self.service.settings["display"]["proxy_color"])
         self.service.box.beep_once()
 
 class RunningTrainingCard(State):
@@ -477,5 +506,5 @@ class RunningTrainingCard(State):
         self.training_id = input_data["card_id"]
         
         self.service.box.set_equipment_power_on(True)
-        self.service.box.set_display_color(self.service.settings["display"]["training_color"])
+        self.service.box.set_display_color_wipe(self.service.settings["display"]["training_color"])
         self.service.box.beep_once()

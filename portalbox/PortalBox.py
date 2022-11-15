@@ -3,6 +3,9 @@
 # PortalBox.py acts as a hardware abstraction layer exposing a somewhat
 # simple API to the hardware
 """
+2022-08-24 Version   KJHass
+  - Added scroll_display and bounce_display functions
+
 2021-06-09 Version   KJHass
   - Supports either Neopixels or DotStars
 
@@ -133,7 +136,7 @@ class PortalBox:
 
     def set_equipment_power_on(self, state):
         '''
-        Turn on/off power to the attached equipment by swithing on/off relay
+        Turn on/off power to the attached equipment by switching on/off relay
             and interlock
         @param (boolean) state - True to turn on power to equipment, False to
             turn off power to equipment
@@ -299,8 +302,28 @@ class PortalBox:
         else:
             logging.info("PortalBox flash_display failed")
 
+    def scroll_display(self, color, duration, back_pixels=3, dir_down=0, center=0):
+        """
+            Scroll a color across all display pixels repeatedly.
+            Previously defined color is used as background color.
+        """
+        self.wake_display()
+        if self.display_controller and self.led_type == "DOTSTARS":
+            self.display_controller.scroll_display(bytes.fromhex(color), duration, back_pixels, dir_down, center)
+        else:
+            logging.info("PortalBox scroll_display failed")
 
-
+    def bounce_display(self, color, duration):
+        """
+            Bounce a color back and forth across all pixels.
+            Previously defined color is used as background color.
+        """
+        self.wake_display()
+        if self.display_controller and self.led_type == "DOTSTARS":
+            self.display_controller.bounce_display(bytes.fromhex(color), duration)
+        else:
+            logging.info("PortalBox bounce_display failed")
+    
     def flash_thread(self, color, duration, flashes, end_color):
         """
             Flash color across all display pixels multiple times. rate is in Hz
@@ -313,11 +336,10 @@ class PortalBox:
                 break
             sleep((duration/1000)/flashes)
 
-
-
     def stop_flashing(self):
         """
             Stops the flashing thread
+            FIXME Waits for thread to finish?
         """
         if self.display_controller:
             self.flash_signal = False

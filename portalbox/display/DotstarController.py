@@ -1,3 +1,9 @@
+"""
+    2022-08-18 Joe Hass
+     - Added scroll and bounce effects
+     - General code cleanup
+     - Pixel reordering IS NOT done here, it is in the driver
+"""
 # Import from standard library
 import logging
 from time import sleep
@@ -6,6 +12,9 @@ import multiprocessing
 # Import from our module
 from .AbstractController import AbstractController, BLACK
 from .DotstarDriver import strip_driver
+# for standalone demos
+#from AbstractController import AbstractController, BLACK
+#from DotstarDriver import strip_driver
 
 # Define the SPI bus and device that will be used
 SPI_BUS = 1
@@ -13,7 +22,6 @@ SPI_DEV = 0
 
 # Define how many LEDs are in the strip
 LED_COUNT = 15
-
 
 class DotstarController(AbstractController):
     """
@@ -23,9 +31,7 @@ class DotstarController(AbstractController):
     """
 
     def __init__(self, settings={}):
-        """Create a Dotstar driver process and start it.
-
-        """
+        """Create a Dotstar driver process and start it."""
         AbstractController.__init__(self)
 
         if "sleep_color" in settings:
@@ -44,7 +50,7 @@ class DotstarController(AbstractController):
 
     def _transmit(self, command):
         """Put a command string in the queue."""
-        #logging.debug("Sending: '%s' to dotstar driver", command.strip())
+        # logging.debug("Sending: '%s' to dotstar driver", command.strip())
         self.command_queue.put(command)
 
     def _receive(self):
@@ -57,7 +63,7 @@ class DotstarController(AbstractController):
         mechanism for a command that fails, so the driver should just throw an
         exception.
         """
-        #TODO are we OK with this behavior?
+        # TODO are we OK with this behavior?
         self.command_queue.join()
         return True
 
@@ -74,70 +80,70 @@ class DotstarController(AbstractController):
     def sleep_display(self):
         """Start a display sleeping animation (pulsing sleep color)."""
         AbstractController.sleep_display(self)
-        command = "pulse {} {} {}\n".format(self.sleep_color[2],
-                                            self.sleep_color[0],
-                                            self.sleep_color[1])
+        command = "pulse {} {} {}\n".format(*self.sleep_color)
         self._transmit(command)
         return self._receive()
 
     def wake_display(self):
         """End a box sleeping animation."""
-        #TODO Should the display change now??
+        # TODO Should the display change now??
         AbstractController.wake_display(self)
 
     def set_display_color(self, color=BLACK):
         """Set the entire strip to specified color (defaults to black)."""
         AbstractController.set_display_color(self, color)
-        command = "color {} {} {}\n".format(color[2],
-                                            color[0],
-                                            color[1])
-        
+        command = "color {} {} {}\n".format(*color)
+
         self._transmit(command)
         return self._receive()
 
-    def set_display_color_wipe(self, color=BLACK, duration=1000):
+    def set_display_color_wipe(self, color=BLACK, duration=1000, dir_down=0):
         """Set the entire strip to specified color using a "wipe" effect.
 
-        color - a tuple of red, green, blue byte values
+        color    - a tuple of red, green, blue byte values
         duration - how long, in milliseconds, the effect is to take
+        dir_down - 0 for left to right (up), 1 for right to left (down)
         """
-        AbstractController.set_display_color_wipe(self, color, duration)
+        AbstractController.set_display_color_wipe(self, color, duration, dir_down)
 
-        command = "wipe {} {} {} {}\n".format(color[2],
-                                              color[0],
-                                              color[1],
-                                              duration)
+        command = "wipe {} {} {} {} {}\n".format(*color, duration, dir_down)
         self._transmit(command)
         return self._receive()
 
-    def flash_display(self, flash_color, duration, flashes=5, end_color=BLACK):
+    def flash_display(self, color, duration, flashes=5, end_color=BLACK):
         """Flash color across all display pixels multiple times."""
-        command = "blink {} {} {} {} {}\n".format(flash_color[2],
-                                                  flash_color[0],
-                                                  flash_color[1],
-                                                  duration,
-                                                  flashes)
+        command = "blink {} {} {} {} {}\n".format(*color, duration, flashes)
         self._transmit(command)
-        success = self._receive()
-        return success
-        #logging.debug("recived: {}".format(success))
-#        return self._receive()
-#        if success:
-             # END_COLOR is disabled....OK with that?
-#            command = "color {} {} {}\n".format(end_color[0],
-#                                                end_color[1],
-#                                                end_color[2])
-            #self._transmit(command)
-            #return self._receive()
+        return self._receive()
+
+    def scroll_display(self, color, duration, back_pixels=3, dir_down=0, center=0):
+        """Scroll color across all display pixels multiple times."""
+        AbstractController.scroll_display(
+            self, color, duration, back_pixels, dir_down, center
+        )
+        command = "scroll {} {} {} {} {} {} {}\n".format(
+            *color,
+            duration,
+            back_pixels,
+            dir_down,
+            center,
+        )
+        self._transmit(command)
+        return self._receive()
+
+    def bounce_display(self, color, duration):
+        """Bounce color back and forth."""
+        AbstractController.bounce_display(self, color, duration)
+        command = "bounce {} {} {} {}\n".format(*color, duration)
+        self._transmit(command)
+        return self._receive()
 
     def shutdown_display(self, end_color=b"\x00\x00\x00"):
         """Set the display color and terminate the driver process."""
 
-        command = "color {} {} {}\n".format(end_color[0],
-                                            end_color[1],
-                                            end_color[2])
+        command = "color {} {} {}\n".format(*end_color)
         self._transmit(command)
-        #success = self._receive()
+        # success = self._receive()
         sleep(1)
 
         self.command_queue.close()
@@ -145,4 +151,3 @@ class DotstarController(AbstractController):
         sleep(1)
         if self.driver.is_alive():
             self.driver.kill()
-        return
