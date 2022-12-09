@@ -130,16 +130,19 @@ class PortalBoxApplication():
         # Determine what we are
         profile = (-1,)
         while profile[0] < 0:
-            # Step 1 Figure out our identity
-            logging.debug("Attempting to get mac address")
-            mac_address = self.getmac("wlan0").replace(":","")
-            ##format(, "x")
-            #mac_address = format(get_mac_address(), "x")
-            logging.debug("Successfully got mac address: {}".format(mac_address))
+          try:
+              # Step 1 Figure out our identity
+              logging.debug("Attempting to get mac address")
+              mac_address = self.getmac("wlan0").replace(":","")
+              ##format(, "x")
+              #mac_address = format(get_mac_address(), "x")
+              logging.debug("Successfully got mac address: {}".format(mac_address))
 
-            profile = self.db.get_equipment_profile(mac_address)
-            if profile[0] < 0:
-                sleep(5)
+              profile = self.db.get_equipment_profile(mac_address)
+          except Exception as e:
+            logging.debug(f"{e}")
+            logging.debug("Didn't get profile, trying again in 5 seconds")
+            sleep(5)
 
         # only run if we have role, which we might not if systemd asked us to
         # shutdown before we discovered a role
