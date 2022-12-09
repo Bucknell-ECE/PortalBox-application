@@ -67,7 +67,7 @@ class State(object):
         """
         if(
             self.service.timeout_minutes > 0 and # The timeout period for the equipment type isn't infinite
-            (datetime.now() - self.timeout_start) > self.timeout_delta # And that its actaully timed out
+            (datetime.now() - self.timeout_start) > self.timeout_delta # And that its actually timed out
           ):
             logging.debug("Timeout period expired with time passed = {}".format((datetime.now() - self.timeout_start)))
             return True
@@ -183,7 +183,6 @@ class AccessComplete(State):
 
     def on_enter(self, input_data):
         logging.info("Usage complete, logging usage and turning off machine")
-        self.service.db.log_access_completion(self.auth_user_id, self.service.equipment_id)
         self.service.box.set_equipment_power_on(False)
 
         self.service.box.set_display_color(self.service.settings["display"]["sleep_color"])
@@ -347,7 +346,7 @@ class RunningNoCard(State):
             logging.debug("Exiting Grace period because the grace period expired")
             self.next_state(AccessComplete, input_data)
             self.service.box.stop_buzzer(stop_beeping = True)
-                
+
         if(input_data["button_pressed"]):
             logging.debug("Exiting Grace period because button was pressed")
             self.next_state(AccessComplete, input_data)
@@ -359,7 +358,6 @@ class RunningNoCard(State):
         self.service.box.set_display_color(self.service.settings["display"]["no_card_grace_color"])
         self.service.box.scroll_display(self.service.settings["display"]["unauth_color"], 200,
                                         dir_down=0, back_pixels=3, center=5)
-        
         self.service.box.start_beeping(
             800,
             self.grace_delta.seconds * 1000,
@@ -385,9 +383,9 @@ class RunningUnauthCard(State):
             logging.debug("Exiting Running Unauthorized Card because the grace period expired")
             self.next_state(AccessComplete, input_data)
             self.service.box.stop_buzzer(stop_beeping = True)
-                
+
         if(input_data["button_pressed"]):
-            logging.debug("Exiting  Running Unauthorized Card because button was pressed")
+            logging.debug("Exiting Running Unauthorized Card because button was pressed")
             self.next_state(AccessComplete, input_data)
             self.service.box.stop_buzzer(stop_beeping = True)
 
@@ -448,8 +446,9 @@ class IdleAuthCard(State):
 
     def on_enter(self, input_data):
         self.service.box.set_equipment_power_on(False)
+        self.service.box.set_display_color(self.service.settings["display"]["timeout_color"])
+        self.service.box.bounce_display(self.service.settings["display"]["access_db_color"], 20)
         self.service.db.log_access_completion(self.auth_user_id, self.service.equipment_id)
-        
         self.service.box.set_display_color(self.service.settings["display"]["timeout_color"])
         self.service.box.bounce_display(self.service.settings["display"]["email_connect_color"], 20)
         #If its a proxy card 
@@ -478,9 +477,11 @@ class RunningProxyCard(State):
     def on_enter(self, input_data):
         self.timeout_start = datetime.now()
         self.training_id = 0
-        
+
         #If the same proxy card is being reinserted then don't log it
         if self.proxy_id != input_data["card_id"]:
+            self.service.box.set_display_color_wipe(self.service.settings["display"]["proxy_color"])
+            self.service.box.bounce_display(self.service.settings["display"]["access_db_color"], 20)
             self.service.db.log_access_attempt(input_data["card_id"], self.service.equipment_id, True)
         self.proxy_id = input_data["card_id"]
         self.service.box.set_equipment_power_on(True)
@@ -502,9 +503,11 @@ class RunningTrainingCard(State):
         self.proxy_id = 0
         #If the training card is new and not just reinserted after a grace period
         if self.training_id != input_data["card_id"]:
+            self.service.box.set_display_color_wipe(self.service.settings["display"]["training_color"])
+            self.service.box.bounce_display(self.service.settings["display"]["access_db_color"], 20)
             self.service.db.log_access_attempt(input_data["card_id"], self.service.equipment_id, True)
         self.training_id = input_data["card_id"]
-        
+
         self.service.box.set_equipment_power_on(True)
         self.service.box.set_display_color_wipe(self.service.settings["display"]["training_color"])
         self.service.box.beep_once()
