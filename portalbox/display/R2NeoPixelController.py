@@ -1,3 +1,8 @@
+"""
+    2022-11-30 Joe Hass
+     - Added stubs for scroll_display and bounce_display
+     - Implemented simple shutdown_display wrapper
+"""
 from __future__ import division
 
 # Import from standard library
@@ -130,3 +135,25 @@ class R2NeoPixelController(AbstractController):
             command = "color {} {} {}\n".format(end_color[0], end_color[1], end_color[2])
             self._transmit(command)
             return self._receive()
+
+    def scroll_display(self, color, duration, back_pixels=3, dir_down=0, center=0):
+        """
+        Scroll color across all display pixels multiple times.
+        This functionality is not implemented in NeoPixels
+        """
+        return True
+
+    def bounce_display(self, color, duration):
+        """
+        Bounce color back and forth.
+        This functionality is not implemented in NeoPixels
+        """
+        return True
+
+    def shutdown_display(self, end_color=b"\x00\x00\x00"):
+        """
+        Set the display color and terminate the driver process.
+        The shutdown functionality is not needed for NeoPixels
+        """
+        command = "color {} {} {}\n".format(*end_color)
+        self._transmit(command)
