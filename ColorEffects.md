@@ -8,9 +8,8 @@ The **scrolling** effect is like a theater marquee. Multiple regularly-spaced pi
 
 The **wipe** effect starts at one end of the LED strip and changes one pixel at a time to the desired color. The wipe effect is used when entering the *Running* mode, where the equipment is turned on, or when changing from an authorized user card to the proxy or training mode.  This effect is only visible for a short time when the background color is changing.
 
-::: center
   Background            Effect                         Meaning
-  --------------------- ------------------------------ -------------------------------------------------------
+  --------------------- ------------------------------ -----------------------------------------
   setup_color           None                           Box is setting itself up
   setup_color           Bouncing setup_color_db        Connecting to database
   setup_color           Bouncing setup_color_email     Connecting to email server
