@@ -1,6 +1,13 @@
 #!python3
 
 """
+2022-11-18 Version   JAHowe
+  - Added a try except to fetching equipment profile
+
+2022-10-10 Version   KJHass
+  - Change location of "running" and "boxactivity" files from /tmp to
+    /run/log so they are in RAM instead of on the SD card
+
 2021-04-05 Version   KJHass
   - Defer database accesses until after user-visible action if possible
   - Use caches of recently used user, proxy, and training cards
@@ -287,7 +294,7 @@ class PortalBoxApplication():
         Stop the service from a signal
         '''
         logging.debug("Interrupted")
-        os.system("echo service_interrupt > /tmp/boxactivity")
+        os.system("echo service_interrupt > /run/log/boxactivity")
         self.shutdown()
 
 
@@ -298,8 +305,8 @@ class PortalBoxApplication():
         '''
         logging.info("Service Exiting")
         self.box.cleanup()
-        os.system("echo service_exit > /tmp/boxactivity")
-        os.system("echo False > /tmp/running")
+        os.system("echo service_exit > /run/log/boxactivity")
+        os.system("echo False > /run/log/running")
 
         if self.equipment_id:
             logging.info("Logging exit-while-running to DB")
@@ -367,7 +374,7 @@ if __name__ == "__main__":
     logging.debug("FSM ends")
 
     # Cleanup and exit
-    os.system("echo False > /tmp/running")
+    os.system("echo False > /run/log/running")
     #service.box.cleanup() ##TODO: Why is this commented out? 
     logging.info("Shutting down logger")
     logging.shutdown()
