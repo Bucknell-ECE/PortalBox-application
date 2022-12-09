@@ -25,3 +25,4 @@ pip-selfcheck.json
 .vscode
 *.bak
 .*.bak
+*.org
