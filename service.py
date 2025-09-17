@@ -21,7 +21,7 @@
 
 2021-06-26 Version James Howe
   - Moved most functionality into portal_fsm.py and cleaned up most functions
-  - Moved all color defintions into config
+  - Moved all color definitions into config
 """
 
 
@@ -63,7 +63,7 @@ class PortalBoxApplication():
 
     def __init__(self, settings):
         """
-        Setup the bare minimun, defering as much as poosible to the run method
+        Setup the bare minimum, deferring as much as possible to the run method
         so signal handlers can be configured in __main__
         """
         self.equipment_id = -1
@@ -88,7 +88,7 @@ class PortalBoxApplication():
         try:
             self.db = Database(self.settings["db"])
         except Exception as e:
-            logging.error("Unable to connect to database exeception raised \n\t {}".format(e))
+            logging.error("Unable to connect to database exception raised \n\t {}".format(e))
             raise e
 
         logging.info("Successfully connected to database")
@@ -99,7 +99,7 @@ class PortalBoxApplication():
         try:
             self.emailer = Emailer(self.settings["email"])
         except Exception as e:
-            logging.error("Unable to connect to email exeception raised \n\t {}".format(e))
+            logging.error("Unable to connect to email exception raised \n\t {}".format(e))
             raise e
         logging.info("Successfully connected to email")
 
@@ -155,7 +155,7 @@ class PortalBoxApplication():
             self.location = profile[4]
             self.timeout_minutes = profile[5]
             self.allow_proxy = profile[6]
-        
+
         logging.info("Discovered identity. Type: %s(%s) Timeout: %s m Allows Proxy: %d",
             self.equipment_type,
             self.equipment_type_id,
@@ -282,7 +282,7 @@ class PortalBoxApplication():
         except Exception as e:
             logging.error("{}".format(e))
 
-    def handle_interupt(self, signum, frame):
+    def handle_interrupt(self, signum, frame):
         '''
         Stop the service from a signal
         '''
@@ -347,8 +347,8 @@ if __name__ == "__main__":
     service = PortalBoxApplication(settings)
 
     # Add signal handler so systemd can shutdown service
-    signal.signal(signal.SIGINT, service.handle_interupt)
-    signal.signal(signal.SIGTERM, service.handle_interupt)
+    signal.signal(signal.SIGINT, service.handle_interrupt)
+    signal.signal(signal.SIGTERM, service.handle_interrupt)
 
 
     # Create finite state machine
@@ -375,4 +375,4 @@ if __name__ == "__main__":
     sys.exit()
 
 
-##TODO add a default config somehwere
+##TODO add a default config somewhere
