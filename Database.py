@@ -304,7 +304,7 @@ class Database:
             logging.error(f"API error")
             details = {
                     "user_is_authorized": False,
-                    "card_type" : CardType(0),
+                    "card_type" : CardType(-1),
                     "user_authority_level": 0
                     }
         else:
