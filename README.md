@@ -18,7 +18,6 @@ Python 3.7+
 Software Libraries
 - Available as python modules
 	- configparser 
-	- mysql-connector
 	- RPi.GPIO
 	- spi 
 	- spidev
@@ -118,6 +117,6 @@ sudo systemctl enable portalbox.service
 - Email messages are hard coded in well code, templates should be used
 	- should be able to configure the location of email template files
 - GMail uses weak certificates which recent raspbian releases reject as invalid. We need to configure smtplib to ignore the weak certificates and use only the certificates raspbian find trustworthy (requires Python 3.x).
-- We use a custom spi, we should consider moving to spidev or releasing our versionverion of spi on PyPi.
+- We use a custom spi, we should consider moving to spidev or releasing our version of spi on PyPi.
 
 
