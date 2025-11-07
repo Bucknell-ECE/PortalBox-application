@@ -39,42 +39,6 @@ class Database:
         self.request_session.headers.update(self.api_header)
 
 
-    def __del__(self):
-        '''
-        Closes the encapsulated database connection
-        '''
-        if self._connection:
-            self._connection.close()
-
-
-    def _reconnect(self):
-        '''
-        Reestablish a connection to the database. Useful if the connection
-        timed out
-        '''
-        logging.debug("Attempting to reconnect to database")
-
-        self._connection = self._connect()
-
-        logging.debug("Reconnected to database")
-
-        return self._connection
-
-
-    def _connect(self):
-        '''
-        Establish a connection to the database
-        '''
-        logging.debug("Attempting to connect to database")
-
-        logging.debug("Connection Settings: {}".format(str(self.connection_settings)))
-        connection = mysql.connector.connect(**self.connection_settings)
-
-        logging.debug("Connected to database")
-
-        return connection
-
-
     def is_registered(self, mac_address):
         '''
         Determine if the portal box identified by the MAC address has been
