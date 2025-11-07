@@ -10,7 +10,6 @@
 # from standard library
 import logging
 import requests
-
 import time
 
 # our code
@@ -38,42 +37,6 @@ class Database:
 
         self.request_session = requests.Session()
         self.request_session.headers.update(self.api_header)
-
-
-    def __del__(self):
-        '''
-        Closes the encapsulated database connection
-        '''
-        if self._connection:
-            self._connection.close()
-
-
-    def _reconnect(self):
-        '''
-        Reestablish a connection to the database. Useful if the connection
-        timed out
-        '''
-        logging.debug("Attempting to reconnect to database")
-
-        self._connection = self._connect()
-
-        logging.debug("Reconnected to database")
-
-        return self._connection
-
-
-    def _connect(self):
-        '''
-        Establish a connection to the database
-        '''
-        logging.debug("Attempting to connect to database")
-
-        logging.debug("Connection Settings: {}".format(str(self.connection_settings)))
-        connection = mysql.connector.connect(**self.connection_settings)
-
-        logging.debug("Connected to database")
-
-        return connection
 
 
     def is_registered(self, mac_address):
@@ -150,12 +113,7 @@ class Database:
 
         logging.debug(f"Got response from server\nstatus: {response.status_code}\nbody: {response.text}")
 
-        if(response.status_code != 200):
-            #If we don't get a success status code, then return and unauthorized user 
-            logging.error(f"API error")
-            self.requires_training = True
-            self.requires_payment = False
-        else:
+        if(response.status_code == 200):
             response_details = response.json()[0]
             profile = (
                     int(response_details["id"]),
@@ -168,6 +126,8 @@ class Database:
                     )
             self.requires_training = int(response_details["requires_training"])
             self.requires_payment  = int(response_details["charge_policy"])
+        else:
+            raise Exception('Error checking if portalbox is registered')
 
         return profile
 
@@ -297,7 +257,7 @@ class Database:
         response = self.request_session.get(self.api_url, params = params)
 
         logging.debug(f"Got response from server\nstatus: {response.status_code}\nbody: {response.text}")
-        logging.debug(f"Took {response.elapsed.total_seconds()}")        
+        logging.debug(f"Took {response.elapsed.total_seconds()}")
 
         if(response.status_code != 200):
             #If we don't get a success status code, then return and unauthorized user 

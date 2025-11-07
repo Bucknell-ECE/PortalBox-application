@@ -9,6 +9,7 @@ The finite state machine for the portal box service.
 Inspired by @cmcginty's answer at
 https://stackoverflow.com/questions/2101961/python-state-machine-design
 """
+
 # from standard library
 from datetime import datetime, timedelta
 import logging
@@ -84,42 +85,34 @@ class State(object):
         else:
             return False
 
+
 class Setup(State):
     """
-    The first state, trys to setup everything that needs to be setup and goes
+    The first state, tries to setup everything that needs to be setup and goes
         to shutdown if it can't
     """
     def __call__(self, input_data):
         pass
 
     def on_enter(self, input_data):
-        #Do everything related to setup, if anything fails and returns an exception, then go to Shutdown
+        """
+        Do everything related to setup, if anything fails and returns an
+        exception, then go to Shutdown
+        """
         logging.info("Starting setup")
         self.service.box.set_display_color(self.service.settings["display"]["setup_color"])
         try:
-            try:
-                self.service.connect_to_database()
-            except Exception as e:
-                raise e
+            self.service.connect_to_database()
 
             self.service.box.set_display_color(self.service.settings["display"]["setup_color_db"])
 
-            try:
-                self.service.connect_to_email()
-            except Exception as e:
-                raise e
+            self.service.connect_to_email()
 
             self.service.box.set_display_color(self.service.settings["display"]["setup_color_email"])
 
-            try:
-                self.service.get_equipment_role()
-            except Exception as e:
-                raise e
+            self.service.get_equipment_role()
 
-            try:
-                self.service.record_ip()
-            except Exception as e:
-                raise e
+            self.service.record_ip()
 
             self.service.box.set_display_color(self.service.settings["display"]["setup_color_role"])
 
@@ -129,13 +122,10 @@ class Setup(State):
             self.flash_rate = self.service.settings.getint("display","flash_rate")
             self.next_state(IdleNoCard, input_data)
             self.service.box.buzz_tone(500,.2)
-            #self.service.box.play_song("/opt/portal-box/portalbox/RickRoll.txt")
         except Exception as e:
             logging.error("Unable to complete setup exception raised: \n\t{}".format(e))
             self.next_state(Shutdown, input_data)
             raise(e)
-
-
 
 
 class Shutdown(State):
@@ -147,7 +137,6 @@ class Shutdown(State):
         self.service.shutdown(input_data["card_id"]) #logging the shutdown is done in this method
 
 
-
 class IdleNoCard(State):
     """
     The state that it will spend the most time in, waits for some card input
@@ -157,8 +146,8 @@ class IdleNoCard(State):
             self.next_state(IdleUnknownCard, input_data)
 
     def on_enter(self, input_data):
-        #self.service.box.set_display_color(self.service.settings["display"]["sleep_color"])
         self.service.box.sleep_display()
+
 
 class AccessComplete(State):
     """
@@ -177,6 +166,7 @@ class AccessComplete(State):
         self.auth_user_id = 0
         self.user_authority_level = 0
         self.next_state(IdleNoCard, input_data)
+
 
 class IdleUnknownCard(State):
     """
@@ -198,7 +188,6 @@ class IdleUnknownCard(State):
         else:
             logging.info("Inserted card with id {}, is not authorized for this equipment".format(input_data["card_id"]))
             self.next_state(IdleUnauthCard, input_data)
-
 
 
 class RunningUnknownCard(State):
@@ -229,10 +218,10 @@ class RunningUnknownCard(State):
             self.service.box.stop_buzzer(stop_beeping = True)
 
         #User card, AND
-        #The box was intially authorized by a trainer or admin AND
+        #The box was initially authorized by a trainer or admin AND
         #Not coming from proxy mode AND
         #Not coming from training mode, OR the card is the same one that was being trained AND
-        #An unathorized user
+        #An unauthorized user
 
         elif(
             input_data["card_type"] == CardType.USER_CARD and
@@ -253,8 +242,9 @@ class RunningUnknownCard(State):
             logging.debug("Exiting Grace period because button was pressed")
             self.next_state(AccessComplete, input_data)
             self.service.box.stop_buzzer(stop_beeping = True)
-#        else:
-#            self.next_state(AccessComplete, input_data)
+        # else:
+        #     self.next_state(AccessComplete, input_data)
+
 
 class RunningAuthUser(State):
     """
@@ -285,8 +275,6 @@ class RunningAuthUser(State):
         self.user_authority_level = input_data["user_authority_level"]
 
 
-
-
 class IdleUnauthCard(State):
     """
     An unauthorized card has been put into the machine, turn off machine
@@ -300,6 +288,7 @@ class IdleUnauthCard(State):
         self.service.box.set_equipment_power_on(False)
         self.service.box.set_display_color(self.service.settings["display"]["unauth_color"])
         self.service.db.log_access_attempt(input_data["card_id"], self.service.equipment_id, False)
+
 
 class RunningNoCard(State):
     """
@@ -336,6 +325,7 @@ class RunningNoCard(State):
             self.grace_delta.seconds * 1000,
             int(self.grace_delta.seconds * self.flash_rate)
             )
+
 
 class RunningUnauthCard(State):
     """
@@ -410,6 +400,7 @@ class RunningTimeout(State):
             int(self.grace_delta.seconds * self.flash_rate)
             )
 
+
 class IdleAuthCard(State):
     """
     The timout grace period is expired and the user is sent and email that
@@ -436,6 +427,7 @@ class IdleAuthCard(State):
         self.auth_user_id = 0
         self.user_authority_level = 0
 
+
 class RunningProxyCard(State):
     """
     Runs the machine in the proxy mode
@@ -457,6 +449,7 @@ class RunningProxyCard(State):
         self.service.box.set_equipment_power_on(True)
         self.service.box.set_display_color(self.service.settings["display"]["proxy_color"])
         self.service.box.beep_once()
+
 
 class RunningTrainingCard(State):
     """
