@@ -10,7 +10,6 @@
 # from standard library
 import logging
 import requests
-
 import time
 
 # our code
@@ -150,12 +149,7 @@ class Database:
 
         logging.debug(f"Got response from server\nstatus: {response.status_code}\nbody: {response.text}")
 
-        if(response.status_code != 200):
-            #If we don't get a success status code, then return and unauthorized user 
-            logging.error(f"API error")
-            self.requires_training = True
-            self.requires_payment = False
-        else:
+        if(response.status_code == 200):
             response_details = response.json()[0]
             profile = (
                     int(response_details["id"]),
@@ -168,6 +162,8 @@ class Database:
                     )
             self.requires_training = int(response_details["requires_training"])
             self.requires_payment  = int(response_details["charge_policy"])
+        else:
+            raise Exception('Error checking if portalbox is registered')
 
         return profile
 
@@ -297,7 +293,7 @@ class Database:
         response = self.request_session.get(self.api_url, params = params)
 
         logging.debug(f"Got response from server\nstatus: {response.status_code}\nbody: {response.text}")
-        logging.debug(f"Took {response.elapsed.total_seconds()}")        
+        logging.debug(f"Took {response.elapsed.total_seconds()}")
 
         if(response.status_code != 200):
             #If we don't get a success status code, then return and unauthorized user 
