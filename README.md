@@ -31,7 +31,7 @@ The software running on the Raspberry Pi is configured using a `config.ini` file
 We recommend testing the application at this point using the command line (assuming `/opt/portalbox` is your working directory):
 
 ```sh
-python service.py config.ini
+sudo python service.py config.ini
 ```
 
 You can use `CTRL` + `C` to stop the application.

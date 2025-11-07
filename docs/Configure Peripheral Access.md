@@ -10,6 +10,7 @@ In `/boot/cmdline.txt` delete the line:
 console=serial0,115200
 ```
 
+> moved to /boot/firmware/cmdline.txt remove the part of line
 And add a new line:
 
 ```ini
@@ -17,6 +18,8 @@ fsck.mode=force
 ```
 
 Then enable the i2c and spi interfaces by editing `/boot/config.txt` and change
+
+> moved to /boot/firmware/config.txt
 
 ```ini
 #dtparam=i2c_arm=on
@@ -43,7 +46,7 @@ dtparam=spi=on
 finally add the lines:
 
 ```ini
-dtoverlay=spi0-hw-cs`
+dtoverlay=spi0-hw-cs
 enable_uart=1
 ```
 
