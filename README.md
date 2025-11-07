@@ -11,9 +11,9 @@ This project is licensed under the Apache 2.0 License - see the LICENSE file for
 It is assumed that:
 
 1. the Raspberry Pi is connected to a MiFare MFRC522 RFID reader, power interlock relays, a buzzer, and LEDs (either DotStars or NeoPixels) via the custom PCB.
-2. the Raspberry Pi is connected to a network that allows it to communicate with the portalbox website instance for your organization. See [Configure Raspbian](docs/Configure%20Raspbian.md)
-3. the Raspberry Pi is running Linux and Linux is configured to allow software to communicate with the attached peripherals. See [Configure Peripheral Access](docs/Configure%20Peripheral%20Access.md)
-4. the necessary Python modules listed in [requirements.txt](requirements.txt) are installed on the Raspberry Pi. See [Install Python Modules](docs/Install%20Python%20Modules.md)
+2. the Raspberry Pi is connected to a network that allows it to communicate with the portalbox website instance for your organization. See [Configure Networking](docs/Configure%20Raspbian.md#networking)
+3. the Raspberry Pi is running Linux and Linux is configured to allow software to communicate with the attached peripherals. See [Configure Peripheral Access](docs/Configure%20Raspbian.md#configure-peripheral-access)
+4. the necessary Python modules listed in [requirements.txt](requirements.txt) are installed on the Raspberry Pi. See [Install Software](docs/Configure%20Raspbian.md#install-software)
 
 ## Installation
 
