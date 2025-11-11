@@ -61,6 +61,7 @@ class PortalBoxApplication():
     between states
     """
 
+
     def __init__(self, settings):
         """
         Setup the bare minimum, deferring as much as possible to the run method
@@ -72,11 +73,13 @@ class PortalBoxApplication():
         self.running = False
         self.card_id = 0
 
+
     def __del__(self):
         """
         free resources after run
         """
         self.box.cleanup()
+
 
     def connect_to_database(self):
         '''
@@ -93,6 +96,7 @@ class PortalBoxApplication():
 
         logging.info("Successfully connected to database")
 
+
     def connect_to_email(self):
         # be prepared to send emails
         logging.info("Attempting to connect to email")
@@ -103,6 +107,7 @@ class PortalBoxApplication():
             raise e
         logging.info("Successfully connected to email")
 
+
     def getmac(self, interface):
         """From Julio SChurt on https://stackoverflow.com/questions/159137/getting-mac-address"""
         try:
@@ -111,6 +116,7 @@ class PortalBoxApplication():
             mac = "00:00:00:00:00:00"
 
         return mac[0:17]
+
 
     def record_ip(self):
         """
@@ -134,8 +140,6 @@ class PortalBoxApplication():
               # Step 1 Figure out our identity
               logging.debug("Attempting to get mac address")
               mac_address = self.getmac("wlan0").replace(":","")
-              ##format(, "x")
-              #mac_address = format(get_mac_address(), "x")
               logging.debug("Successfully got mac address: {}".format(mac_address))
 
               profile = self.db.get_equipment_profile(mac_address)
@@ -192,7 +196,7 @@ class PortalBoxApplication():
                     logging.info(f"Exception: {e}\n trying again")
             new_input_data = {
                 "card_id": card_id,
-                "user_is_authorized": details["user_is_authorized"],              
+                "user_is_authorized": details["user_is_authorized"],
                 "card_type": details["card_type"],
                 "user_authority_level": details["user_authority_level"],
                 "button_pressed": self.box.has_button_been_pressed()
@@ -219,6 +223,7 @@ class PortalBoxApplication():
             new_input_data["button_pressed"] = self.box.has_button_been_pressed()
 
         return new_input_data
+
 
     def get_user_auths(self, card_id):
         '''
@@ -248,6 +253,7 @@ class PortalBoxApplication():
         except Exception as e:
             logging.error("{}".format(e))
 
+
     def send_user_email_proxy(self, auth_id):
         '''
         Sends the user an email when they have left a proxy card in the machine
@@ -264,6 +270,7 @@ class PortalBoxApplication():
                 self.location))
         except Exception as e:
             logging.error("{}".format(e))
+
 
     def send_user_email_training(self, trainer_id, trainee_id):
         '''
@@ -282,6 +289,7 @@ class PortalBoxApplication():
         except Exception as e:
             logging.error("{}".format(e))
 
+
     def handle_interrupt(self, signum, frame):
         '''
         Stop the service from a signal
@@ -289,7 +297,6 @@ class PortalBoxApplication():
         logging.debug("Interrupted")
         os.system("echo service_interrupt > /tmp/boxactivity")
         self.shutdown()
-
 
 
     def shutdown(self, card_id = 1):
