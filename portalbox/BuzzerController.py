@@ -1,6 +1,6 @@
 """
 2021-07-27 Version James Howe
-    - Created intial version, based on KJHass's DotstartDriver
+    - Created initial version, based on KJHass's DotstartDriver
 2021-07-29
     - Added all the functionality
 """
@@ -39,9 +39,7 @@ NOTES_4TH_OCTAVE = {
 }
 
 class BuzzerController:
-    
     def __init__(self, buzzer_pin = GPIO_BUZZER_PIN, settings = {}):
-        
         pwm_enabled = True
         if "buzzer_pwm" in settings["display"]:
             if settings["display"]["buzzer_pwm"].lower() in ("no", "false", "0"):
@@ -55,40 +53,46 @@ class BuzzerController:
         )
         self.driver.daemon = True
         self.driver.start()
-        
+
+
     def _transmit(self,command):
         """Put a command string in the queue."""
         self.command_queue.put(command)
-        
+
+
     def play_song(self, file_name, sn_len = .1, spacing = .05):
         """
             Plays a song on the buzzer
         """
         command = "sing {} {} {}".format(file_name, sn_len, spacing)
-        
+
         self._transmit(command)
-    
+
+
     def buzz_tone(self, freq, length = 0.2, stop_song = False, stop_beeping = False):
         """
             Plays the specified tone on the buzzer for the specified length
         """
         command = "buzz {} {} {} {}".format(freq, length, stop_song, stop_beeping)
         self._transmit(command)
-        
+
+
     def beep(self, freq, duration = 2.0, beeps = 10):
         """
             Beeps the buzzer the specified number of times in the duration
         """
         command = "beep {} {} {}".format(freq, duration, beeps)
         self._transmit(command)
-        
+
+
     def stop(self, stop_singing = False, stop_buzzing = False, stop_beeping = False):
         """
             Stops the specified effect(s) on the buzzer 
         """        
         command = "stop {} {} {}".format(stop_singing, stop_buzzing, stop_beeping)
         self._transmit(command)
-        
+
+
     def shutdown_buzzer(self):
         """
             Stops any current effects and shutsdown the driver
@@ -102,6 +106,7 @@ class BuzzerController:
             self.driver.kill()
         return
 
+
 class Buzzer:
     """
     A simple class definition for the Buzzer
@@ -110,7 +115,7 @@ class Buzzer:
     def __init__(self, buzzer_pin = GPIO_BUZZER_PIN, pwm_buzzer = True):
         logging.info("Creating Buzzer Controller")
         self.buzzer_pin = buzzer_pin
-        
+
         #If we don't have the hardware for PWM then don't set it up
         self.pwm_buzzer = pwm_buzzer
         GPIO.setup(self.buzzer_pin, GPIO.OUT)
@@ -118,20 +123,20 @@ class Buzzer:
             self.buzzer = GPIO.PWM(self.buzzer_pin, DEFAULT_TONE)
             self.buzzer.ChangeDutyCycle(DEFAULT_DUTY)
             self.buzzer.stop()
-        
+
         #Whether it is currently playing a sound
         self.state = False
-        
+
         #A flag for each state, and the corresponding info for each effect
         self.is_singing = False
         self.song_list = []
-        
+
         self.is_buzzing = False
         self.buzz_info = {
             "freq": -1,
             "num_of_loops": 0
             }
-        
+
         self.is_beeping = False
         self.beep_info = {
             "freq": -1,
@@ -139,14 +144,13 @@ class Buzzer:
             "wait_ms": 0,
             "effect_time": 0
             }
-        
-        
+
         # Create signal handlers
         signal.signal(signal.SIGTERM, self.catch_signal)
         signal.signal(signal.SIGINT, self.catch_signal)
         self.signalled = False
-        
-        
+
+
     def start_buzzer(self, freq = DEFAULT_TONE, duty = DEFAULT_DUTY):
         self.state = True
 
@@ -157,17 +161,20 @@ class Buzzer:
         else:
             GPIO.output(self.buzzer_pin, True)
 
+
     def stop_buzzer(self):
         self.state = False
         if(self.pwm_buzzer):
             self.buzzer.stop()
         else:
             GPIO.output(self.buzzer_pin, False)
-        
+
+
     def catch_signal(self, signum, frame):
         logging.info("Buzzer DRVR caught signal")
         self.signalled = True
-            
+
+
     def create_song_string(self, file_name, sn_len = .1, spacing = .05):
         """
             Takes in a 
@@ -178,12 +185,12 @@ class Buzzer:
         loop_spacing = (spacing*1000)//LOOP_MS
         if loop_spacing < 1:
             loop_spacing = 1
-            
+
         #Take each line/note in the song and split it into the note, the octave, and length
         for line in song_file:
             split_line = line.split(",")
             note_oct = split_line[0]
-            
+
             #determines if a note is flat
             if(note_oct[1] == "b"):
                 note = note_oct[0:2]
@@ -191,24 +198,24 @@ class Buzzer:
             else:
                 note = note_oct[0]
                 octave = int(note_oct[1])
-                
+
             #Gets the frequency by shifting up or down from the 4th octave
             freq = NOTES_4TH_OCTAVE[note] * (2**(octave-4))
-            
-            #Gets the length in seconds by mutiplying the length given by the 16th note length 
+
+            #Gets the length in seconds by multiplying the length given by the 16th note length 
             length = float(split_line[1]) * sn_len
-            
+
             #Determines the number of loops which corresponds to the calculated time with a min of 1 loop
             loop_length = (length*1000)//LOOP_MS
             if loop_length < 1:
                 loop_length = 1
-            
-            #Adds the note to the list of frequencies, with the apropriate spacing afterwards
+
+            #Adds the note to the list of frequencies, with the appropriate spacing afterwards
             freq_list.append([freq,loop_length])
             freq_list.append([-1,loop_spacing])
-            
-            
+
         return freq_list
+
 
 def process_command(command, buzz_con):
     """
@@ -228,9 +235,9 @@ def process_command(command, buzz_con):
         #Buzz the buzzer once
         if params[2] == "True":
             buzz_con.is_singing = False
-            
+
         buzz_con.is_buzzing = True
-        
+
         if params[3] == "True":
             buzz_con.is_beeping = False
             
@@ -238,36 +245,36 @@ def process_command(command, buzz_con):
             "freq": float(params[0]),
             "num_of_loops": (float(params[1])*1000)//LOOP_MS
             }
-        
+
     elif tokens[0] == "beep":
         #Beep the buzzer at a specified freq
         buzz_con.is_singing = False
         buzz_con.is_buzzing = False
         buzz_con.is_beeping = True
-        
+
         duration = float(params[1])
         beeps = int(params[2])
-        
+
         wait_ms = duration // (2 * beeps)
         wait_ms = (wait_ms + (LOOP_MS // 2)) // LOOP_MS * LOOP_MS
         if wait_ms < LOOP_MS:
             wait_ms = LOOP_MS
-        
+
         duration = wait_ms * 2 * beeps
-        
+
         buzz_con.beep_info = {
             "freq": float(params[0]),
             "duration_ms": duration,
             "wait_ms": wait_ms,
             "effect_time": 0
             }
-        
+
     elif tokens[0] == "sing":
         buzz_con.is_singing = True
         buzz_con.is_buzzing = False
         buzz_con.is_beeping = False
         buzz_con.song_list = buzz_con.create_song_string(params[0],float(params[1]),float(params[2]))
-        
+
     elif tokens[0] == "stop":
         if params[0] == "True":
             buzz_con.is_singing = False
@@ -275,7 +282,6 @@ def process_command(command, buzz_con):
             buzz_con.is_buzzing = False
         if params[2] == "True":
             buzz_con.is_beeping = False
-  
     else:
         errno = 1
 
@@ -304,10 +310,8 @@ def buzzer_driver(command_queue, buzzer_pin, pwm_buzzer):
             if buzz_con.is_singing:
                 #If there are still notes left in the song list then play them
                 if len(buzz_con.song_list) > 0:
-                    
-                    
                     freq,length = buzz_con.song_list[0]
-                    
+
                     #Turn off the buzzer if its on and the frequency is <= 0
                     if freq <= 0 and buzz_con.state == True:
                         buzz_con.stop_buzzer()
@@ -316,11 +320,11 @@ def buzzer_driver(command_queue, buzzer_pin, pwm_buzzer):
                         buzz_con.start_buzzer(freq)
                     #Remove one from the length of the note 
                     buzz_con.song_list[0][1] -= 1
-                    
+
                     #If the length of the note os 0 then remove the note from the list
                     if buzz_con.song_list[0][1] <= 0:
                         buzz_con.freq_list.pop(0)
-                    
+
                 else:
                     buzz_con.stop_buzzer() 
                     buzz_con.is_singing = False
@@ -340,7 +344,7 @@ def buzzer_driver(command_queue, buzzer_pin, pwm_buzzer):
                 else:
                     buzz_con.stop_buzzer() 
                     buzz_con.is_beeping = False
-                
+
             if buzz_con.is_buzzing:
                 if(buzz_con.buzz_info["num_of_loops"] > 0):
                     if(buzz_con.state == False):
