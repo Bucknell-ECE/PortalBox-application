@@ -285,6 +285,9 @@ class PortalBoxApplication():
         Sends the user and the trainer an email when they have left a training card in the machine
             past the timeout
         '''
+        if not self.emailer:
+            return
+
         logging.debug("Getting user email ID from DB")
         trainer = self.db.get_user(trainer_id)
         trainee = self.db.get_user(trainee_id)
