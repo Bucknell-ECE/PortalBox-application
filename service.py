@@ -100,6 +100,12 @@ class PortalBoxApplication():
     def connect_to_email(self):
         # be prepared to send emails
         logging.info("Attempting to connect to email")
+        settings = self.settings["email"];
+        if "enabled" in settings:
+            if settings["enabled"].lower() in ("no", "false", "0"):
+                self.emailer = None
+                return
+
         try:
             self.emailer = Emailer(self.settings["email"])
         except Exception as e:
@@ -126,7 +132,6 @@ class PortalBoxApplication():
         s.connect(("8.8.8.8", 80))
         ip_address = s.getsockname()[0]
         self.db.record_ip(self.equipment_id, ip_address)
-
 
 
     def get_equipment_role(self):
@@ -230,10 +235,7 @@ class PortalBoxApplication():
         Determines whether or not the user is authorized for the equipment type
         @return a boolean of whether or not the user is authorized for the equipment
         '''
-        #Check if we should always check the remote database
-        ## TODO: have this actually check for the local database
-        if(True):
-            return self.db.is_user_authorized_for_equipment_type(card_id, self.equipment_type_id)
+        return self.db.is_user_authorized_for_equipment_type(card_id, self.equipment_type_id)
 
 
     def send_user_email(self, auth_id):
@@ -241,6 +243,9 @@ class PortalBoxApplication():
         Sends the user an email when they have left their card in the machine
             past the timeout
         '''
+        if not self.emailer:
+            return
+
         logging.debug("Getting user email ID from DB")
         user = self.db.get_user(auth_id)
         try:
@@ -259,6 +264,9 @@ class PortalBoxApplication():
         Sends the user an email when they have left a proxy card in the machine
             past the timeout
         '''
+        if not self.emailer:
+            return
+
         logging.debug("Getting user email ID from DB")
         user = self.db.get_user(auth_id)
         try:
