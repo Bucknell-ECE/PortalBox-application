@@ -104,17 +104,11 @@ class Setup(State):
         try:
             self.service.connect_to_database()
 
-            self.service.box.set_display_color(self.service.settings["display"]["setup_color_db"])
-
             self.service.connect_to_email()
-
-            self.service.box.set_display_color(self.service.settings["display"]["setup_color_email"])
 
             self.service.get_equipment_role()
 
             self.service.record_ip()
-
-            self.service.box.set_display_color(self.service.settings["display"]["setup_color_role"])
 
             self.timeout_delta = timedelta(minutes = self.service.timeout_minutes)
             self.grace_delta = timedelta(seconds = self.service.settings.getint("user_exp","grace_period"))
