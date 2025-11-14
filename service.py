@@ -61,6 +61,7 @@ class PortalBoxApplication():
     between states
     """
 
+
     def __init__(self, settings):
         """
         Setup the bare minimum, deferring as much as possible to the run method
@@ -72,11 +73,13 @@ class PortalBoxApplication():
         self.running = False
         self.card_id = 0
 
+
     def __del__(self):
         """
         free resources after run
         """
         self.box.cleanup()
+
 
     def connect_to_database(self):
         '''
@@ -93,15 +96,23 @@ class PortalBoxApplication():
 
         logging.info("Successfully connected to database")
 
+
     def connect_to_email(self):
         # be prepared to send emails
         logging.info("Attempting to connect to email")
+        settings = self.settings["email"];
+        if "enabled" in settings:
+            if settings["enabled"].lower() in ("no", "false", "0"):
+                self.emailer = None
+                return
+
         try:
             self.emailer = Emailer(self.settings["email"])
         except Exception as e:
             logging.error("Unable to connect to email exception raised \n\t {}".format(e))
             raise e
         logging.info("Successfully connected to email")
+
 
     def getmac(self, interface):
         """From Julio SChurt on https://stackoverflow.com/questions/159137/getting-mac-address"""
@@ -112,6 +123,7 @@ class PortalBoxApplication():
 
         return mac[0:17]
 
+
     def record_ip(self):
         """
         This gets the IP address for the box and then records it in the database
@@ -120,7 +132,6 @@ class PortalBoxApplication():
         s.connect(("8.8.8.8", 80))
         ip_address = s.getsockname()[0]
         self.db.record_ip(self.equipment_id, ip_address)
-
 
 
     def get_equipment_role(self):
@@ -134,8 +145,6 @@ class PortalBoxApplication():
               # Step 1 Figure out our identity
               logging.debug("Attempting to get mac address")
               mac_address = self.getmac("wlan0").replace(":","")
-              ##format(, "x")
-              #mac_address = format(get_mac_address(), "x")
               logging.debug("Successfully got mac address: {}".format(mac_address))
 
               profile = self.db.get_equipment_profile(mac_address)
@@ -192,7 +201,7 @@ class PortalBoxApplication():
                     logging.info(f"Exception: {e}\n trying again")
             new_input_data = {
                 "card_id": card_id,
-                "user_is_authorized": details["user_is_authorized"],              
+                "user_is_authorized": details["user_is_authorized"],
                 "card_type": details["card_type"],
                 "user_authority_level": details["user_authority_level"],
                 "button_pressed": self.box.has_button_been_pressed()
@@ -220,15 +229,13 @@ class PortalBoxApplication():
 
         return new_input_data
 
+
     def get_user_auths(self, card_id):
         '''
         Determines whether or not the user is authorized for the equipment type
         @return a boolean of whether or not the user is authorized for the equipment
         '''
-        #Check if we should always check the remote database
-        ## TODO: have this actually check for the local database
-        if(True):
-            return self.db.is_user_authorized_for_equipment_type(card_id, self.equipment_type_id)
+        return self.db.is_user_authorized_for_equipment_type(card_id, self.equipment_type_id)
 
 
     def send_user_email(self, auth_id):
@@ -236,6 +243,9 @@ class PortalBoxApplication():
         Sends the user an email when they have left their card in the machine
             past the timeout
         '''
+        if not self.emailer:
+            return
+
         logging.debug("Getting user email ID from DB")
         user = self.db.get_user(auth_id)
         try:
@@ -248,11 +258,15 @@ class PortalBoxApplication():
         except Exception as e:
             logging.error("{}".format(e))
 
+
     def send_user_email_proxy(self, auth_id):
         '''
         Sends the user an email when they have left a proxy card in the machine
             past the timeout
         '''
+        if not self.emailer:
+            return
+
         logging.debug("Getting user email ID from DB")
         user = self.db.get_user(auth_id)
         try:
@@ -265,11 +279,15 @@ class PortalBoxApplication():
         except Exception as e:
             logging.error("{}".format(e))
 
+
     def send_user_email_training(self, trainer_id, trainee_id):
         '''
         Sends the user and the trainer an email when they have left a training card in the machine
             past the timeout
         '''
+        if not self.emailer:
+            return
+
         logging.debug("Getting user email ID from DB")
         trainer = self.db.get_user(trainer_id)
         trainee = self.db.get_user(trainee_id)
@@ -282,6 +300,7 @@ class PortalBoxApplication():
         except Exception as e:
             logging.error("{}".format(e))
 
+
     def handle_interrupt(self, signum, frame):
         '''
         Stop the service from a signal
@@ -289,7 +308,6 @@ class PortalBoxApplication():
         logging.debug("Interrupted")
         os.system("echo service_interrupt > /tmp/boxactivity")
         self.shutdown()
-
 
 
     def shutdown(self, card_id = 1):

@@ -100,21 +100,20 @@ class Setup(State):
         exception, then go to Shutdown
         """
         logging.info("Starting setup")
-        self.service.box.set_display_color(self.service.settings["display"]["setup_color"])
+
+        color = b"\xFF\xFF\xFF"
+        if "setup_color" in self.service.settings["display"]:
+            color = self.service.settings["display"]["setup_color"]
+
+        self.service.box.set_display_color(color)
         try:
             self.service.connect_to_database()
 
-            self.service.box.set_display_color(self.service.settings["display"]["setup_color_db"])
-
             self.service.connect_to_email()
-
-            self.service.box.set_display_color(self.service.settings["display"]["setup_color_email"])
 
             self.service.get_equipment_role()
 
             self.service.record_ip()
-
-            self.service.box.set_display_color(self.service.settings["display"]["setup_color_role"])
 
             self.timeout_delta = timedelta(minutes = self.service.timeout_minutes)
             self.grace_delta = timedelta(seconds = self.service.settings.getint("user_exp","grace_period"))
@@ -263,7 +262,12 @@ class RunningAuthUser(State):
         self.proxy_id = 0
         self.training_id = 0
         self.service.box.set_equipment_power_on(True)
-        self.service.box.set_display_color(self.service.settings["display"]["auth_color"])
+
+        color = b"\x00\xFF\x00"
+        if "auth_color" in self.service.settings["display"]:
+            color = self.service.settings["display"]["auth_color"]
+
+        self.service.box.set_display_color(color)
         self.service.box.beep_once()
 
         #If the card is new ie, not coming from a timeout then don't log this as a new session
@@ -286,7 +290,12 @@ class IdleUnauthCard(State):
     def on_enter(self, input_data):
         self.service.box.beep_once()
         self.service.box.set_equipment_power_on(False)
-        self.service.box.set_display_color(self.service.settings["display"]["unauth_color"])
+
+        color = b"\xFF\x00\x00"
+        if "unauth_color" in self.service.settings["display"]:
+            color = self.service.settings["display"]["unauth_color"]
+
+        self.service.box.set_display_color(color)
         self.service.db.log_access_attempt(input_data["card_id"], self.service.equipment_id, False)
 
 
@@ -305,7 +314,7 @@ class RunningNoCard(State):
             logging.debug("Exiting Grace period because the grace period expired")
             self.next_state(AccessComplete, input_data)
             self.service.box.stop_buzzer(stop_beeping = True)
-                
+
         if(input_data["button_pressed"]):
             logging.debug("Exiting Grace period because button was pressed")
             self.next_state(AccessComplete, input_data)
@@ -314,12 +323,17 @@ class RunningNoCard(State):
     def on_enter(self, input_data):
         logging.info("Grace period started")
         self.grace_start = datetime.now()
+
+        color = b"\xFF\xFF\x00"
+        if "no_card_grace_color" in self.service.settings["display"]:
+            color = self.service.settings["display"]["no_card_grace_color"]
+
         self.service.box.flash_display(
-            self.service.settings["display"]["no_card_grace_color"],
+            color,
             self.grace_delta.seconds * 1000,
             int(self.grace_delta.seconds * self.flash_rate)
             )
-        
+
         self.service.box.start_beeping(
             800,
             self.grace_delta.seconds * 1000,
@@ -344,7 +358,7 @@ class RunningUnauthCard(State):
             logging.debug("Exiting Running Unauthorized Card because the grace period expired")
             self.next_state(AccessComplete, input_data)
             self.service.box.stop_buzzer(stop_beeping = True)
-                
+
         if(input_data["button_pressed"]):
             logging.debug("Exiting  Running Unauthorized Card because button was pressed")
             self.next_state(AccessComplete, input_data)
@@ -354,9 +368,14 @@ class RunningUnauthCard(State):
         logging.info("Unauthorized Card grace period started")
         logging.info("Card type was {}".format(input_data["card_type"]))
         self.grace_start = datetime.now()
-        self.service.box.set_display_color(self.service.settings["display"]["unauth_card_grace_color"])
+
+        color = b"\xFF\x80\x00"
+        if "unauth_card_grace_color" in self.service.settings["display"]:
+            color = self.service.settings["display"]["unauth_card_grace_color"]
+
+        self.service.box.set_display_color(color)
         self.service.box.flash_display(
-            self.service.settings["display"]["unauth_card_grace_color"],
+            color,
             self.grace_delta.seconds * 1000,
             int(self.grace_delta.seconds * self.flash_rate)
             )
@@ -389,8 +408,13 @@ class RunningTimeout(State):
     def on_enter(self, input_data):
         logging.info("Machine timout, grace period started")
         self.grace_start = datetime.now()
+
+        color = b"\xDF\x20\x00"
+        if "grace_timeout_color" in self.service.settings["display"]:
+            color = self.service.settings["display"]["grace_timeout_color"]
+
         self.service.box.flash_display(
-            self.service.settings["display"]["grace_timeout_color"],
+            color,
             self.grace_delta.seconds * 1000,
             int(self.grace_delta.seconds * self.flash_rate)
             )
@@ -413,7 +437,7 @@ class IdleAuthCard(State):
     def on_enter(self, input_data):
         self.service.box.set_equipment_power_on(False)
         self.service.db.log_access_completion(self.auth_user_id, self.service.equipment_id)
-        
+
         #If its a proxy card 
         if(self.proxy_id > 0):
             self.service.send_user_email_proxy(self.auth_user_id)
@@ -421,7 +445,12 @@ class IdleAuthCard(State):
             self.service.send_user_email_training(self.auth_user_id, self.training_id)
         else:
             self.service.send_user_email(input_data["card_id"])
-        self.service.box.set_display_color(self.service.settings["display"]["timeout_color"])
+
+        color = b"\xFF\x00\x00"
+        if "timeout_color" in self.service.settings["display"]:
+            color = self.service.settings["display"]["timeout_color"]
+
+        self.service.box.set_display_color(color)
         self.proxy_id = 0
         self.training_id = 0
         self.auth_user_id = 0
@@ -447,7 +476,12 @@ class RunningProxyCard(State):
             self.service.db.log_access_attempt(input_data["card_id"], self.service.equipment_id, True)
         self.proxy_id = input_data["card_id"]
         self.service.box.set_equipment_power_on(True)
-        self.service.box.set_display_color(self.service.settings["display"]["proxy_color"])
+
+        color = b"\xDF\x20\x00"
+        if "proxy_color" in self.service.settings["display"]:
+            color = self.service.settings["display"]["proxy_color"]
+
+        self.service.box.set_display_color(color)
         self.service.box.beep_once()
 
 
@@ -468,7 +502,12 @@ class RunningTrainingCard(State):
         if self.training_id != input_data["card_id"]:
             self.service.db.log_access_attempt(input_data["card_id"], self.service.equipment_id, True)
         self.training_id = input_data["card_id"]
-        
+
         self.service.box.set_equipment_power_on(True)
-        self.service.box.set_display_color(self.service.settings["display"]["training_color"])
+
+        color = b"\x80\x00\x80"
+        if "training_color" in self.service.settings["display"]:
+            color = self.service.settings["display"]["training_color"]
+
+        self.service.box.set_display_color(color)
         self.service.box.beep_once()
