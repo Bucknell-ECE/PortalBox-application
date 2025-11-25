@@ -23,7 +23,6 @@
   - adds more logging for debugging purposes
 """
 # from standard library
-import os
 import logging
 from time import sleep, time_ns, thread_time
 import threading
@@ -133,31 +132,22 @@ class PortalBox:
 
     def set_equipment_power_on(self, state):
         '''
-        Turn on/off power to the attached equipment by swithing on/off relay
+        Turn on/off power to the attached equipment by switching on/off relay
             and interlock
         @param (boolean) state - True to turn on power to equipment, False to
             turn off power to equipment
         '''
         if state:
             logging.info("Turning on equipment power and interlock")
-            os.system("echo True > /tmp/running")
         else:
             logging.info("Turning off equipment power and interlock")
-            os.system("echo False > /tmp/running")
+
         ## Turn off power to SSR
         GPIO.output(GPIO_SOLID_STATE_RELAY_PIN, state)
-        ## Open interlock
 
-        #FIXME Seems like we didn't need the if else below? Like it just makes things complicated
+        ## Open interlock
         GPIO.output(GPIO_INTERLOCK_PIN, state)
 
-        """
-        #FIXME  Why? What do we do for Pi4?
-        if self.is_pi_zero_w:
-            GPIO.output(GPIO_INTERLOCK_PIN, state)
-        else:
-            GPIO.output(GPIO_INTERLOCK_PIN, (not state))
-        """
 
     def get_button_state(self):
         '''
@@ -356,7 +346,6 @@ class PortalBox:
 
     def cleanup(self):
         logging.info("PortalBox.cleanup() starts")
-        os.system("echo False > /tmp/running")
         self.buzzer_controller.shutdown_buzzer()
         self.set_display_color("00 00 00", False)
         GPIO.cleanup()
