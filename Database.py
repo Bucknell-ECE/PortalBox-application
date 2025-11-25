@@ -31,7 +31,7 @@ class Database:
         if (not 'website' in settings or not 'bearer_token' in settings):
             raise ValueError("Database configuration must at a minimum include the 'website', 'api', and 'bearer_token' keys")
 
-        self.api_url= f"{settings['website']}/api/api.php"
+        self.api_url= f"{settings['website']}/api/box.php"
         self.api_header = {"Authorization" : f"Bearer {settings['bearer_token']}"}
 
         self.request_session = requests.Session()

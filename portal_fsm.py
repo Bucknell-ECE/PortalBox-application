@@ -101,7 +101,7 @@ class Setup(State):
         """
         logging.info("Starting setup")
 
-        color = b"\xFF\xFF\xFF"
+        color = "FF FF FF"
         if "setup_color" in self.service.settings["display"]:
             color = self.service.settings["display"]["setup_color"]
 
@@ -263,7 +263,7 @@ class RunningAuthUser(State):
         self.training_id = 0
         self.service.box.set_equipment_power_on(True)
 
-        color = b"\x00\xFF\x00"
+        color = "00 FF 00"
         if "auth_color" in self.service.settings["display"]:
             color = self.service.settings["display"]["auth_color"]
 
@@ -291,7 +291,7 @@ class IdleUnauthCard(State):
         self.service.box.beep_once()
         self.service.box.set_equipment_power_on(False)
 
-        color = b"\xFF\x00\x00"
+        color = "FF 00 00"
         if "unauth_color" in self.service.settings["display"]:
             color = self.service.settings["display"]["unauth_color"]
 
@@ -324,7 +324,7 @@ class RunningNoCard(State):
         logging.info("Grace period started")
         self.grace_start = datetime.now()
 
-        color = b"\xFF\xFF\x00"
+        color = "FF FF 00"
         if "no_card_grace_color" in self.service.settings["display"]:
             color = self.service.settings["display"]["no_card_grace_color"]
 
@@ -369,7 +369,7 @@ class RunningUnauthCard(State):
         logging.info("Card type was {}".format(input_data["card_type"]))
         self.grace_start = datetime.now()
 
-        color = b"\xFF\x80\x00"
+        color = "FF 80 00"
         if "unauth_card_grace_color" in self.service.settings["display"]:
             color = self.service.settings["display"]["unauth_card_grace_color"]
 
@@ -409,7 +409,7 @@ class RunningTimeout(State):
         logging.info("Machine timout, grace period started")
         self.grace_start = datetime.now()
 
-        color = b"\xDF\x20\x00"
+        color = "DF 20 00"
         if "grace_timeout_color" in self.service.settings["display"]:
             color = self.service.settings["display"]["grace_timeout_color"]
 
@@ -446,7 +446,7 @@ class IdleAuthCard(State):
         else:
             self.service.send_user_email(input_data["card_id"])
 
-        color = b"\xFF\x00\x00"
+        color = "FF 00 00"
         if "timeout_color" in self.service.settings["display"]:
             color = self.service.settings["display"]["timeout_color"]
 
@@ -477,7 +477,7 @@ class RunningProxyCard(State):
         self.proxy_id = input_data["card_id"]
         self.service.box.set_equipment_power_on(True)
 
-        color = b"\xDF\x20\x00"
+        color = "DF 20 00"
         if "proxy_color" in self.service.settings["display"]:
             color = self.service.settings["display"]["proxy_color"]
 
@@ -505,7 +505,7 @@ class RunningTrainingCard(State):
 
         self.service.box.set_equipment_power_on(True)
 
-        color = b"\x80\x00\x80"
+        color = "80 00 80"
         if "training_color" in self.service.settings["display"]:
             color = self.service.settings["display"]["training_color"]
 
