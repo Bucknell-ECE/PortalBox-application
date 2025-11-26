@@ -306,7 +306,6 @@ class PortalBoxApplication():
         Stop the service from a signal
         '''
         logging.debug("Interrupted")
-        os.system("echo service_interrupt > /tmp/boxactivity")
         self.shutdown()
 
 
@@ -316,8 +315,6 @@ class PortalBoxApplication():
         '''
         logging.info("Service Exiting")
         self.box.cleanup()
-        os.system("echo service_exit > /tmp/boxactivity")
-        os.system("echo False > /tmp/running")
 
         if self.equipment_id:
             logging.info("Logging exit-while-running to DB")
@@ -385,12 +382,7 @@ if __name__ == "__main__":
     logging.debug("FSM ends")
 
     # Cleanup and exit
-    os.system("echo False > /tmp/running")
-    #service.box.cleanup() ##TODO: Why is this commented out? 
     logging.info("Shutting down logger")
     logging.shutdown()
 
     sys.exit()
-
-
-##TODO add a default config somewhere
