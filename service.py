@@ -371,7 +371,8 @@ if __name__ == "__main__":
 
 
     # Create finite state machine
-    fsm = fsm.Setup(service, {"card_id": 0})
+    input_data = {"card_id": 0}
+    fsm = fsm.Setup(service, input_data)
 
 
     # Run service
