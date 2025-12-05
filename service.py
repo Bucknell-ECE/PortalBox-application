@@ -46,13 +46,17 @@ from CardType import CardType
 # Definitions aka constants
 DEFAULT_CONFIG_FILE_PATH = "config.ini"
 
-input_data = {
-    "card_id": 0,
-    "user_is_authorized": False,
-    "card_type": "none",
-    "user_authority_level":0,
-    "button_pressed": False,
-}
+CLI_HELP_MSG = """
+service.py - The software for a Raspberry Pi based PortalBox
+
+Usage
+    python service.py [FILE]
+
+    Switch power on to the attached equipment when an authorized user's access
+    card is present. By default the config.ini file in the same directory as
+    service.py will be used to configure software behavior however you may
+    specify an alternative configuration as a command line argument.
+"""
 
 
 class PortalBoxApplication():
@@ -322,9 +326,6 @@ class PortalBoxApplication():
         self.running = False
 
 
-
-
-
 # Here is the main entry point.
 if __name__ == "__main__":
     config_file_path = DEFAULT_CONFIG_FILE_PATH
@@ -334,7 +335,10 @@ if __name__ == "__main__":
         if os.path.isfile(sys.argv[1]):
             # override default config file
             config_file_path = sys.argv[1]
-        # else print help message?
+        else:
+            print(CLI_HELP_MSG)
+            sys.exit()
+
 
     # Read our Configuration
     settings = configparser.ConfigParser()
@@ -367,6 +371,7 @@ if __name__ == "__main__":
 
 
     # Create finite state machine
+    input_data = {"card_id": 0}
     fsm = fsm.Setup(service, input_data)
 
 
