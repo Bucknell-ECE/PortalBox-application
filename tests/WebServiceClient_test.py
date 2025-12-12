@@ -1,10 +1,10 @@
 import unittest
 from unittest.mock import MagicMock, patch
 
-from .context import WebServiceClient
+from .context import WebService
 
-class TestWebServiceClient(unittest.TestCase):
-    @patch("WebServiceClient.requests")
+class TestWebService(unittest.TestCase):
+    @patch("WebService.requests")
     def test_log_startup_error_when_not_registered(self, mock_requests):
         url = "http://127.0.0.1"
         mac = "abcdef123456"
@@ -14,9 +14,9 @@ class TestWebServiceClient(unittest.TestCase):
 
         mock_requests.post.return_value = response
 
-        client = WebServiceClient.Client(url, mac)
+        client = WebService.Client(url, mac)
 
-        with self.assertRaises(WebServiceClient.NotRegisteredError):
+        with self.assertRaises(WebService.NotRegisteredError):
             client.log_startup()
 
         mock_requests.post.assert_called_with(
@@ -25,7 +25,7 @@ class TestWebServiceClient(unittest.TestCase):
             data = "startup"
         )
 
-    @patch("WebServiceClient.requests")
+    @patch("WebService.requests")
     def test_log_startup_error_when_out_of_service(self, mock_requests):
         url = "http://127.0.0.1"
         mac = "abcdef123456"
@@ -35,9 +35,9 @@ class TestWebServiceClient(unittest.TestCase):
 
         mock_requests.post.return_value = response
 
-        client = WebServiceClient.Client(url, mac)
+        client = WebService.Client(url, mac)
 
-        with self.assertRaises(WebServiceClient.OutOfServiceError):
+        with self.assertRaises(WebService.OutOfServiceError):
             client.log_startup()
 
         mock_requests.post.assert_called_with(
@@ -46,7 +46,7 @@ class TestWebServiceClient(unittest.TestCase):
             data = "startup"
         )
 
-    @patch("WebServiceClient.requests")
+    @patch("WebService.requests")
     def test_log_startup_success(self, mock_requests):
         url = "http://127.0.0.1"
         mac = "abcdef123456"
@@ -56,7 +56,7 @@ class TestWebServiceClient(unittest.TestCase):
 
         mock_requests.post.return_value = response
 
-        client = WebServiceClient.Client(url, mac)
+        client = WebService.Client(url, mac)
         client.log_startup()
 
         mock_requests.post.assert_called_with(
@@ -65,7 +65,7 @@ class TestWebServiceClient(unittest.TestCase):
             data = "startup"
         )
 
-    @patch("WebServiceClient.requests")
+    @patch("WebService.requests")
     def test_begin_usage_session_error_when_not_token_garbled(self, mock_requests):
         url = "http://127.0.0.1"
         mac = "abcdef123456"
@@ -76,9 +76,9 @@ class TestWebServiceClient(unittest.TestCase):
 
         mock_requests.put.return_value = response
 
-        client = WebServiceClient.Client(url, mac)
+        client = WebService.Client(url, mac)
 
-        with self.assertRaises(WebServiceClient.NotAuthorizedError):
+        with self.assertRaises(WebService.NotAuthorizedError):
             client.begin_usage_session(card_id)
 
         mock_requests.put.assert_called_with(
@@ -87,7 +87,7 @@ class TestWebServiceClient(unittest.TestCase):
             headers = {"Authorization": f"Bearer {card_id}"}
         )
 
-    @patch("WebServiceClient.requests")
+    @patch("WebService.requests")
     def test_begin_usage_session_error_when_not_authorized(self, mock_requests):
         url = "http://127.0.0.1"
         mac = "abcdef123456"
@@ -98,9 +98,9 @@ class TestWebServiceClient(unittest.TestCase):
 
         mock_requests.put.return_value = response
 
-        client = WebServiceClient.Client(url, mac)
+        client = WebService.Client(url, mac)
 
-        with self.assertRaises(WebServiceClient.NotAuthorizedError):
+        with self.assertRaises(WebService.NotAuthorizedError):
             client.begin_usage_session(card_id)
 
         mock_requests.put.assert_called_with(
@@ -109,7 +109,7 @@ class TestWebServiceClient(unittest.TestCase):
             headers = {"Authorization": f"Bearer {card_id}"}
         )
 
-    @patch("WebServiceClient.requests")
+    @patch("WebService.requests")
     def test_begin_usage_session_success(self, mock_requests):
         url = "http://127.0.0.1"
         mac = "abcdef123456"
@@ -120,7 +120,7 @@ class TestWebServiceClient(unittest.TestCase):
 
         mock_requests.put.return_value = response
 
-        client = WebServiceClient.Client(url, mac)
+        client = WebService.Client(url, mac)
         client.begin_usage_session(card_id)
 
         mock_requests.put.assert_called_with(
@@ -129,7 +129,7 @@ class TestWebServiceClient(unittest.TestCase):
             headers = {"Authorization": f"Bearer {card_id}"}
         )
 
-    @patch("WebServiceClient.requests")
+    @patch("WebService.requests")
     def test_end_usage_session_error_when_not_token_garbled(self, mock_requests):
         url = "http://127.0.0.1"
         mac = "abcdef123456"
@@ -140,9 +140,9 @@ class TestWebServiceClient(unittest.TestCase):
 
         mock_requests.post.return_value = response
 
-        client = WebServiceClient.Client(url, mac)
+        client = WebService.Client(url, mac)
 
-        with self.assertRaises(WebServiceClient.NotAuthorizedError):
+        with self.assertRaises(WebService.NotAuthorizedError):
             client.end_usage_session(card_id)
 
         mock_requests.post.assert_called_with(
@@ -151,7 +151,7 @@ class TestWebServiceClient(unittest.TestCase):
             headers = {"Authorization": f"Bearer {card_id}"}
         )
 
-    @patch("WebServiceClient.requests")
+    @patch("WebService.requests")
     def test_end_usage_session_error_when_not_authorized(self, mock_requests):
         url = "http://127.0.0.1"
         mac = "abcdef123456"
@@ -162,9 +162,9 @@ class TestWebServiceClient(unittest.TestCase):
 
         mock_requests.post.return_value = response
 
-        client = WebServiceClient.Client(url, mac)
+        client = WebService.Client(url, mac)
 
-        with self.assertRaises(WebServiceClient.NotAuthorizedError):
+        with self.assertRaises(WebService.NotAuthorizedError):
             client.end_usage_session(card_id)
 
         mock_requests.post.assert_called_with(
@@ -173,7 +173,7 @@ class TestWebServiceClient(unittest.TestCase):
             headers = {"Authorization": f"Bearer {card_id}"}
         )
 
-    @patch("WebServiceClient.requests")
+    @patch("WebService.requests")
     def test_end_usage_session_success(self, mock_requests):
         url = "http://127.0.0.1"
         mac = "abcdef123456"
@@ -184,7 +184,7 @@ class TestWebServiceClient(unittest.TestCase):
 
         mock_requests.post.return_value = response
 
-        client = WebServiceClient.Client(url, mac)
+        client = WebService.Client(url, mac)
         client.end_usage_session(card_id)
 
         mock_requests.post.assert_called_with(
