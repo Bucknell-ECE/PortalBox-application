@@ -66,7 +66,7 @@ class TestWebService(unittest.TestCase):
         )
 
     @patch("WebService.requests")
-    def test_begin_usage_session_error_when_not_token_garbled(self, mock_requests):
+    def test_begin_usage_session_error_when_token_garbled(self, mock_requests):
         url = "http://127.0.0.1"
         mac = "abcdef123456"
         card_id = "f6e5d4c3b2a100"
@@ -130,10 +130,11 @@ class TestWebService(unittest.TestCase):
         )
 
     @patch("WebService.requests")
-    def test_end_usage_session_error_when_not_token_garbled(self, mock_requests):
+    def test_change_card_error_when_token_garbled(self, mock_requests):
         url = "http://127.0.0.1"
         mac = "abcdef123456"
         card_id = "f6e5d4c3b2a100"
+        proxy_card_id = "65412309873"
 
         response = MagicMock()
         response.status_code = 401
@@ -143,9 +144,82 @@ class TestWebService(unittest.TestCase):
         client = WebService.Client(url, mac)
 
         with self.assertRaises(WebService.NotAuthorizedError):
-            client.end_usage_session(card_id)
+            client.change_card(card_id, proxy_card_id)
 
         mock_requests.post.assert_called_with(
+            f"{url}/api/v2/box-activation.php",
+            params = {"mac": mac},
+            headers = {"Authorization": f"Bearer {card_id}"},
+            json = {'card': proxy_card_id}
+        )
+
+    @patch("WebService.requests")
+    def test_change_card_error_when_not_authorized(self, mock_requests):
+        url = "http://127.0.0.1"
+        mac = "abcdef123456"
+        card_id = "f6e5d4c3b2a100"
+        proxy_card_id = "65412309873"
+
+        response = MagicMock()
+        response.status_code = 403
+
+        mock_requests.post.return_value = response
+
+        client = WebService.Client(url, mac)
+
+        with self.assertRaises(WebService.NotAuthorizedError):
+            client.change_card(card_id, proxy_card_id)
+
+        mock_requests.post.assert_called_with(
+            f"{url}/api/v2/box-activation.php",
+            params = {"mac": mac},
+            headers = {"Authorization": f"Bearer {card_id}"},
+            json = {'card': proxy_card_id}
+        )
+
+    @patch("WebService.requests")
+    def test_change_card_success(self, mock_requests):
+        url = "http://127.0.0.1"
+        mac = "abcdef123456"
+        card_id = "f6e5d4c3b2a100"
+        proxy_card_id = "65412309873"
+        mode = "proxy"
+
+        response = MagicMock()
+        response.status_code = 200
+        response.text = mode
+
+        mock_requests.post.return_value = response
+
+        client = WebService.Client(url, mac)
+        response = client.change_card(card_id, proxy_card_id)
+
+        self.assertEqual(mode, response)
+
+        mock_requests.post.assert_called_with(
+            f"{url}/api/v2/box-activation.php",
+            params = {"mac": mac},
+            headers = {"Authorization": f"Bearer {card_id}"},
+            json = {'card': proxy_card_id}
+        )
+
+    @patch("WebService.requests")
+    def test_end_usage_session_error_when_token_garbled(self, mock_requests):
+        url = "http://127.0.0.1"
+        mac = "abcdef123456"
+        card_id = "f6e5d4c3b2a100"
+
+        response = MagicMock()
+        response.status_code = 401
+
+        mock_requests.delete.return_value = response
+
+        client = WebService.Client(url, mac)
+
+        with self.assertRaises(WebService.NotAuthorizedError):
+            client.end_usage_session(card_id)
+
+        mock_requests.delete.assert_called_with(
             f"{url}/api/v2/box-activation.php",
             params = {"mac": mac},
             headers = {"Authorization": f"Bearer {card_id}"}
@@ -160,14 +234,14 @@ class TestWebService(unittest.TestCase):
         response = MagicMock()
         response.status_code = 403
 
-        mock_requests.post.return_value = response
+        mock_requests.delete.return_value = response
 
         client = WebService.Client(url, mac)
 
         with self.assertRaises(WebService.NotAuthorizedError):
             client.end_usage_session(card_id)
 
-        mock_requests.post.assert_called_with(
+        mock_requests.delete.assert_called_with(
             f"{url}/api/v2/box-activation.php",
             params = {"mac": mac},
             headers = {"Authorization": f"Bearer {card_id}"}
@@ -182,12 +256,12 @@ class TestWebService(unittest.TestCase):
         response = MagicMock()
         response.status_code = 200
 
-        mock_requests.post.return_value = response
+        mock_requests.delete.return_value = response
 
         client = WebService.Client(url, mac)
         client.end_usage_session(card_id)
 
-        mock_requests.post.assert_called_with(
+        mock_requests.delete.assert_called_with(
             f"{url}/api/v2/box-activation.php",
             params = {"mac": mac},
             headers = {"Authorization": f"Bearer {card_id}"}
